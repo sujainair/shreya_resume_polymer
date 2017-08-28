@@ -1,0 +1,202 @@
+<!-- Displays the cards with project details and images. Also creates a fullscreen gallery for the project. The project name is same as image_folder in firebase -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-material/paper-material.html">
+<link rel="import" href="/bower_components/paper-card/paper-card.html">
+<link rel="import" href="/bower_components/l2t-paper-slider/l2t-paper-slider.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<!-- The default styles for this application -->
+<link rel="import" href="/src/shreya-resume-app/default-styles.html">
+
+<dom-module id="shreya-project">
+  <template>
+    <style include="default-styles"></style>
+    <style>
+      .image {
+        margin: 10px;
+        padding: 2px;
+        max-width: 95%;
+        max-height: 470px;
+      }
+      .fullscreen-image{
+        margin: 10px;
+        padding: 2px;
+        max-width: 100%;
+        max-height: 95vh;
+      }
+      .fullscreen-slider{
+        --paper-slide-height : auto;
+        text-align : center;
+        --paper-slide-dot-styles : {
+          margin : 2px;
+          width: 10px;
+          height: 10px;
+        }
+      }
+      .slider {
+        --paper-slide-height : auto;
+        text-align : center;
+        --paper-slide-dot-styles : {
+          margin : 2px;
+          width: 5px;
+          height: 5px;
+        }
+      }
+      .card-box{
+        margin: 10px;
+        padding: 2px;
+        max-width: 400px;
+        max-height: 400px;
+      }
+      .close-button{
+        position: absolute;
+        top:0px;
+        right: 0px;
+        z-index: 4;
+        --iron-icon-fill-color : white;
+      }
+      .fullscreen-button {
+        position: absolute;
+        top: 80%;
+        right: 10px;
+        z-index: 1;
+        --iron-icon-fill-color : white;
+      }
+      .right-button{
+        position: absolute;
+        top: 40%;
+        right: 10px;
+        z-index: 1;
+        --iron-icon-fill-color : white;
+      }
+      .left-button{
+        position: absolute;
+        left: 10px;
+        top: 40%;
+        z-index: 1;
+        --iron-icon-fill-color : white;
+      }
+      .fullscreen-dialog {
+        padding: 0px;
+        margin: 0px;
+        background-color: black;
+      }
+      .fullscreen-paper-material {
+        padding:0px;
+        margin:0px;
+        height:100%;
+        background-color: black;
+      }
+      .desc a {
+        color: blue;
+        font-weight: bold;
+        text-decoration: none;
+      }
+    </style>
+    <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
+    <paper-card elevation="1" class="card-box">
+      <paper-material elevation="0">
+        <paper-icon-button id="fullscreen_icon" class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
+        <paper-icon-button id="right_icon" class="right-button" icon="chevron-right" on-click="_NextPic"></paper-icon-button>
+        <paper-icon-button id="left_icon" class="left-button" icon="chevron-left" on-click="_PrevPic"></paper-icon-button>
+        <l2t-paper-slider id="slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
+          <template is="dom-repeat" items="{{imageUrls}}">
+            <paper-slide style="background-color: black"><img src="{{item.url}}" class="image"/></paper-slide>
+          </template>
+        </l2t-paper-slider>
+      </paper-material>
+      <paper-material elevation="0" style="max-height:135px; overflow:auto">
+        <h1>{{project.name}}</h1>
+        <hr>
+        <div id="desc" class="desc"></div>
+      </paper-material>
+    </paper-card>
+    <paper-dialog id="fullscreen" with-backdrop="true" class="fullscreen-dialog">
+      <paper-material elevation="0" class="fullscreen-paper-material">
+        <paper-icon-button id="fullscreen_icon" class="close-button" icon="clear" on-click="_CloseFullscreen"></paper-icon-button>
+        <paper-icon-button id="right_icon" class="right-button" icon="chevron-right" on-click="_FNextPic"></paper-icon-button>
+        <paper-icon-button id="left_icon" class="left-button" icon="chevron-left" on-click="_FPrevPic"></paper-icon-button>
+        <l2t-paper-slider id="fullscreen_slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="fullscreen-slider">
+          <template is="dom-repeat" items="{{imageUrls}}">
+            <paper-slide style="background-color: black"><img src="{{item.url}}" class="fullscreen-image"/></paper-slide>
+          </template>
+        </l2t-paper-slider>
+      </paper-material>
+    </paper-dialog>
+  </template>
+  <script>
+    Polymer({
+
+      is: 'shreya-project',
+
+      properties: {
+        /**
+        * The project for which this element is defined.
+        * Should be the same value as image_folder in firebase
+        */
+        project : {
+          type : Object
+        },
+        /** The urls of all images in this project/image_folder */
+        imageUrls : {
+          type : Array,
+        }
+      },
+
+      /**
+      * get details from firebase when ready
+      */
+      ready : function(){
+        if(this.project){
+          this.$.myfirebase.getProjectImageUrls(this.project.image_folder)
+          .then(function(results){
+            if(results.type === 'projectImageUrls'){
+              this.imageUrls = results.value;
+            }
+          }.bind(this));
+          this.$.desc.innerHTML = this.project.description;
+        }
+      },
+      /**
+      * Navigate to next image in the slider
+      */
+      _NextPic : function(){
+        this.$.slider.moveNext();
+      },
+      /**
+      * Navigate to previous image in the slider
+      */
+      _PrevPic : function(){
+        this.$.slider.movePrev();
+      },
+      /**
+      * Open the full screen gallery
+      */
+      _OpenFullScreen : function(){
+        this.$.fullscreen.open();
+      },
+      /**
+      * Close the fullscreen gallery
+      */
+      _CloseFullscreen : function(){
+        this.$.fullscreen.close();
+      },
+      /**
+      * Navigate to the next image on the fullscreen gallery
+      */
+      _FNextPic : function(){
+        this.$.fullscreen_slider.moveNext();
+      },
+      /**
+      * Navigate to the previous image on the fullscreen gallery
+      */
+      _FPrevPic : function(){
+        this.$.fullscreen_slider.movePrev();
+      }
+    });
+  </script>
+</dom-module>

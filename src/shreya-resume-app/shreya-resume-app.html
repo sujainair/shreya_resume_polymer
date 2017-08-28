@@ -1,0 +1,59 @@
+<!-- This is the main application. Defines all the elements to be displayed in order -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="/bower_components/paper-material/paper-material.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-header.html">
+<link rel="import" href="/src/shreya-resume-app/top-card-scroller.html">
+<link rel="import" href="/src/shreya-resume-app/quote-line.html">
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<link rel="import" href="/src/shreya-resume-app/shreya-project.html">
+<link rel="import" href="/src/shreya-resume-app/shreya-my-details.html">
+
+<dom-module id="shreya-resume-app">
+  <template>
+    <style>
+      .flex-items-layout{
+        @apply(--layout-horizontal);
+        @apply(--layout-around-justified);
+        @apply(--layout-wrap);
+      }
+    </style>
+    <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
+    <shreya-resume-header></shreya-resume-header>
+    <top-card-scroller></top-card-scroller>
+    <quote-line></quote-line>
+    <paper-material elevation="0" class="flex-items-layout" style="padding:10px;" main>
+      <template is="dom-repeat" items="[[projects]]">
+        <shreya-project project="[[item]]"><shreya-project>
+      </template>
+    </paper-material>
+    <shreya-my-details></shreya-my-details>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'shreya-resume-app',
+
+      properties: {
+        /** All the projects that are defined in firebase */
+        projects : {
+          type : Array,
+        }
+      },
+      /**
+      * Get the list of projects from firebase when ready
+      */
+      ready : function(){
+        this.$.myfirebase.getProjects()
+          .then(function(results){
+            if(results.type === 'projects'){
+              this.projects = results.value;
+            }
+          }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

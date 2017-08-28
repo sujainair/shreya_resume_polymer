@@ -1,0 +1,162 @@
+<!-- Defines all the firebase functions required for the app. Returns results in the form of a Promise each time -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/polymerfire/firebase-document.html">
+
+<dom-module id="shreya-resume-firebase-app">
+  <template>
+    <firebase-document id="firebasedoc"
+    path="{{firebasePath}}"
+    data="{{firebaseData}}"></firebase-document>
+  </template>
+  <script>
+    Polymer({
+
+      is: 'shreya-resume-firebase-app',
+
+      /**
+      * Gets image urls for the carousel on the top. These are the _1.jpg under each project added in firebase
+      * @return {Promise}
+      */
+      getScrollImages : function(){
+        return new Promise(function(resolve, reject){
+          this.firebasePath = '/projects';
+          var ref = this.$.firebasedoc.ref;
+          var result = [];
+          ref.once('value')
+            .then(function(snapshot){
+              var projects = snapshot.val();
+              var maxLength = Object.keys(projects).length;
+              var count = 0;
+              for (var seq in projects){
+                if (projects.hasOwnProperty(seq)){
+                  var folder = projects[seq].image_folder;
+                  var storageRef = this.$.firebasedoc.app.storage().refFromURL('gs://shreyaganesh-788d8.appspot.com/' + folder + '/_1.jpg');
+                  storageRef.getDownloadURL().then(function(url){
+                    result.push({url : url});
+                    count++;
+                    if(count === maxLength){
+                      var finalResult = {
+                        type : 'scrollImages',
+                        value : result
+                      }
+                      resolve(finalResult);
+                    }
+                  }.bind(this));
+                }
+              }
+            }.bind(this));
+        }.bind(this));
+      },
+      /**
+      * Get the quote text from firebase
+      * @return {Promise}
+      */
+      getQuote : function(){
+        return new Promise(function(resolve, reject) {
+          this.firebasePath = "/quote";
+          var ref = this.$.firebasedoc.ref;
+          ref.once('value')
+            .then(function(snapshot){
+              var quote = snapshot.val();
+              resolve({
+                type : 'quote',
+                value : quote
+              });
+            }.bind(this));
+        }.bind(this));
+      },
+      /**
+      * Get the names of all the projects in firebase
+      * @return {Promise}
+      */
+      getProjects : function(){
+        return new Promise(function(resolve, reject) {
+          var results = [];
+          this.firebasePath = '/projects';
+          var ref = this.$.firebasedoc.ref;
+          var results = [];
+          ref.once('value')
+            .then(function(snapshot){
+              var projects = snapshot.val();
+              var maxLength = Object.keys(projects).length;
+              var count = 0;
+              for (var seq in projects){
+                if (projects.hasOwnProperty(seq)){
+                  results.push(projects[seq]);
+                  count++;
+                  if(count === maxLength){
+                    var finalResult = {
+                      type : 'projects',
+                      value : results
+                    }
+                    resolve(finalResult);
+                  }
+                }
+              }
+            }.bind(this));
+        }.bind(this));
+      },
+      /**
+      * Get the Array of urls for a given project's images.
+      * projectName is the folder name of the images/project directory in firebase storage
+      * @param {String} projectName
+      * @return {Promise}
+      */
+      getProjectImageUrls : function(projectName){
+        return new Promise(function(resolve, reject) {
+          var fileNameCount = 1;
+          var results = [];
+          var storage = this.$.firebasedoc.app.storage();
+          var getUrls = function(storage, fileNameCount, results) {
+            var storageRef = storage.refFromURL('gs://shreyaganesh-788d8.appspot.com/' + projectName + '/_' + fileNameCount + '.jpg');
+            storageRef.getDownloadURL()
+              .then(function(url){
+                results.push({url : url});
+                ++fileNameCount;
+                var storageRef = storage.refFromURL('gs://shreyaganesh-788d8.appspot.com/' + projectName + '/_' + fileNameCount + '.jpg');
+                getUrls(storage, fileNameCount, results);
+              }.bind(this))
+              .catch(function(error){
+                if (error.code === "storage/object-not-found"){
+                  var finalResult = {
+                    type : 'projectImageUrls',
+                    value : results
+                  }
+                  resolve(finalResult);
+                }
+              }.bind(this));
+          };
+          getUrls(storage, fileNameCount, results);
+        }.bind(this));
+      },
+      /**
+      * Get the details like profile image and intro
+      * @return {Promise}
+      */
+      getMyDetails : function(){
+        return new Promise(function(resolve, reject) {
+          this.firebasePath = '/my_intro';
+          var ref = this.$.firebasedoc.ref;
+          var results = {};
+          results.type = 'myDetails';
+          results.value = {};
+          ref.once('value').then(function(snapshot){
+            results.value.my_intro = snapshot.val();
+            if(results.value.profileImg){
+              resolve(results);
+            }
+          });
+          var storage = this.$.firebasedoc.app.storage();
+          var storageRef = storage.refFromURL('gs://shreyaganesh-788d8.appspot.com/profile.jpg');
+          storageRef.getDownloadURL().then(function(url){
+            results.value.profileImg = url;
+            if(results.value.my_intro){
+              resolve(results);
+            }
+          });
+        }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

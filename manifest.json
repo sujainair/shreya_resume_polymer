@@ -1,0 +1,7 @@
+{
+  "name": "shreya_resume",
+  "short_name": "shreya_resume",
+  "description": "An online resume of fashion stylist Shreya Ganesh",
+  "start_url": "/",
+  "display": "standalone"
+}

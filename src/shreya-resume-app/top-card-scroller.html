@@ -1,0 +1,68 @@
+<!-- The scrolling panel on the top. Displays 1 image from each project in firebase. -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/l2t-paper-slider/l2t-paper-slider.html">
+<link rel="import" href="/bower_components/paper-material/paper-material.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<!-- The default styles for this application -->
+<link rel="import" href="/src/shreya-resume-app/default-styles.html">
+<dom-module id="top-card-scroller">
+  <template>
+    <style include="default-styles"></style>
+    <style>
+      .slider_container {
+        margin: 0px;
+        padding: 2px;
+        max-width: 100%;
+        max-height: 500px;
+      }
+      .image {
+        margin: 10px;
+        padding: 2px;
+        max-width: 95%;
+        max-height: 470px;
+      }
+      .slider {
+        --paper-slide-height : auto;
+        text-align : center;
+       --paper-slide-dot-styles : {
+          margin : 2px;
+          width: 10px;
+          height: 10px;
+        }
+      }
+    </style>
+    <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
+    <paper-material elevation="0" class="slider_container">
+      <l2t-paper-slider id="slider" auto-progress slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
+        <template is="dom-repeat" items="{{imageUrls}}">
+          <paper-slide style="background-color: black"><img src="{{item.url}}" class="image"/></paper-slide>
+        </template>
+      </l2t-paper-slider>
+    </paper-material>
+  </template>
+  <script>
+    Polymer({
+
+      is: 'top-card-scroller',
+
+      properties: {
+        /** The urls of images to show in the slider */
+        imageUrls : {
+          type : Array,
+        }
+      },
+      /**
+      * get the imageUrls from firebase when ready
+      */
+      ready : function(){
+        this.$.myfirebase.getScrollImages()
+          .then(function(results){
+            if(results.type === 'scrollImages'){
+              this.imageUrls = results.value;
+            }
+          }.bind(this));
+      },
+    });
+  </script>
+</dom-module>

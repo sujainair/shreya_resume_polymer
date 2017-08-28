@@ -1,0 +1,105 @@
+<!-- Displays the profile image and about me details specified in firebase. Also has the email address --> 
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="/bower_components/paper-material/paper-material.html">
+<link rel="import" href="/bower_components/paper-card/paper-card.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<!-- The default styles for this application -->
+<link rel="import" href="/src/shreya-resume-app/default-styles.html">
+
+<dom-module id="shreya-my-details">
+  <template>
+    <style include="default-styles"></style>
+    <style>
+      .flex-items-layout{
+        @apply(--layout-horizontal);
+        @apply(--layout-around-justified);
+        @apply(--layout-wrap);
+      }
+      .card{
+        float: left;
+        margin: 10px;
+        padding: 2px;
+        max-height: 400px;
+      }
+      .profile_image {
+        margin: 0px;
+        padding: 2px;
+        max-width: 100%;
+        max-height: 100%;
+        float: right;
+      }
+    </style>
+    <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
+    <paper-material elevation="0">
+      <h1>About Me</h1>
+      <hr>
+      <paper-material elevation="0" class="flex-items-layout" style="padding:10px" main>
+        <paper-material id="profileImg" elevation="0" class="card">
+          <img src="{{profileImg}}" class="profile_image"/>
+        </paper-material>
+        <paper-material id="intro" elevation="0" class="card">
+          {{intro}}
+          <div>
+            <hr>
+            <paper-icon-button icon="mail" on-click="_OpenMail"></paper-icon-button><a href="mailto:shreyaganesh91@gmail.com"> shreyaganesh91@gmail.com</a>
+          </div>
+        </paper-material>
+      </paper-material>
+    </paper-material>
+  </template>
+
+  <script>
+    /** Used different style for small devices */
+    var SMALL_DEVICE_WIDTH = 600;
+    Polymer({
+
+      is: 'shreya-my-details',
+
+      properties: {
+        /** The intro/about text as in firebase */
+        intro : {
+          type : String
+        },
+        /** The url to profile image in firebase storage*/
+        profileImg : {
+          type : String
+        }
+      },
+
+      /**
+      * Get intro and profileImg values when ready
+      * Depending on the screen width also adjust the style
+      */
+      ready : function(){
+        this.$.myfirebase.getMyDetails()
+          .then(function(results){
+            if(results.type === 'myDetails'){
+              this.intro = results.value.my_intro;
+              this.profileImg = results.value.profileImg;
+            }
+          }.bind(this));
+        //Adjust style after checking device width
+        var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+        if(width > SMALL_DEVICE_WIDTH) {
+          this.$$('#profileImg').style['max-width'] = '50%';
+          this.$$('#intro').style['max-width'] = '50%';
+        }
+        else {
+          this.$$('#profileImg').style['max-width'] = '100%';
+          this.$$('#intro').style['max-width'] = '100%';
+        }
+      },
+      /**
+      * Open the default mail client
+      */
+      _OpenMail : function(){
+        window.location.href = "mailto:shreyaganesh91@gmail.com";
+      }
+    });
+  </script>
+</dom-module>

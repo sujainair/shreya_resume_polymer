@@ -1,0 +1,38 @@
+<!-- Is the header of the webpage -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/app-layout/app-layout.html">
+<link rel="import" href="/bower_components/app-layout/app-scroll-effects/effects/waterfall.html">
+<!-- The default styles for this application -->
+<link rel="import" href="/src/shreya-resume-app/default-styles.html">
+
+<dom-module id="shreya-resume-header">
+  <template>
+    <style include="default-styles"></style>
+    <style>
+      app-header {
+        background-color: white;
+        height : 80px;
+      }
+      .subtitle {
+        padding-bottom: 2px;
+        font-size: medium;
+        text-align: center;
+        font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;
+      }
+    </style>
+    <app-header effects="waterfall" condenses reveals fixed>
+      <app-toolbar sticky style="height:50px">
+        <h2 condensed-title style="text-align:center">Shreya Ganesh</h2>
+      </app-toolbar>
+      <app-toolbar style="height:25px"><div bottom-item class="subtitle">A portfilio of my work and experience</div></app-toolbar>
+    </app-header>
+  </template>
+  <script>
+    Polymer({
+
+      is: 'shreya-resume-header',
+
+    });
+  </script>
+</dom-module>

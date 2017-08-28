@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>Shreya Ganesh - Online Resume</title>
+    <meta name="description" content="An online resume of Fashion stylist Shreya Ganesh">
+
+    <!-- See https://goo.gl/OOhYW5 -->
+    <link rel="manifest" href="/manifest.json">
+
+    <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="/bower_components/polymerfire/firebase-app.html">
+    <link rel="import" href="/src/shreya-resume-app/shreya-resume-app.html">
+
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- for Promise to be recognised by IE -->
+    <!--[if !IE]><!--><script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.3.5/bluebird.min.js"></script><!--<![endif]-->
+
+  </head>
+  <body bgcolor="rgb(0.1,0.1,0.1)">
+    <!-- The application's firebase application initialization -->
+    <firebase-app auth-domain="shreyaganesh-788d8.firebaseapp.com"
+    database-url="https://shreyaganesh-788d8.firebaseio.com/"
+    api-key="AIzaSyDMyCR5HsXBMmJ199qPIum4j_Y6tAMedxI"
+    storage-bucket="shreyaganesh-788d8.appspot.com"></firebase-app>
+    <!-- the main application -->
+    <shreya-resume-app></shreya-resume-app>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+<!-- This is a single line of quote that is displayed on the webpage. The quote is specified in firebase --> 
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-material/paper-material.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<!-- The default styles for this application -->
+<link rel="import" href="/src/shreya-resume-app/default-styles.html">
+
+<link href="https://fonts.googleapis.com/css?family=PT+Mono" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Exo" rel="stylesheet">
+
+<dom-module id="quote-line">
+  <template>
+    <style include="default-styles"></style>
+    <style>
+      .quote {
+        font-size: x-large;
+        color: red;
+        background-color: white;
+        font-family: Exo, "Arial Black", "sans serif";
+        text-align: center;
+      }
+      .quote_mark {
+        font-size: -webkit-xxx-large;
+        color : black;
+        font-family: "PT Mono", monospace;
+      }
+    </style>
+    <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
+    <paper-material elevation="1" class="quote">
+      <span class="quote_mark"><sub>“</sub></span>{{quote}}
+    </paper-material>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'quote-line',
+
+      properties : {
+        /** The qute line as defined in firebase */
+        quote : {
+          type : String
+        }
+      },
+
+      /**
+      * When ready get the quote string from firebase
+      */
+      ready : function(){
+        this.$.myfirebase.getQuote()
+          .then(function(quote){
+            this.quote = quote.value;
+          }.bind(this));
+      },
+    });
+  </script>
+</dom-module>
