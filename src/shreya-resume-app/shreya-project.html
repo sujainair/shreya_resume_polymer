@@ -9,6 +9,7 @@
 <link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
 <!-- Application dependencies -->
 <link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<link rel="import" href="/src/shreya-resume-app/shreya-project-details.html">
 <!-- The default styles for this application -->
 <link rel="import" href="/src/shreya-resume-app/default-styles.html">
 
@@ -46,11 +47,21 @@
           height: 5px;
         }
       }
-      .card-box{
-        margin: 10px;
-        padding: 2px;
-        max-width: 400px;
-        max-height: 400px;
+      @media (min-width : 500px){
+        .card-box{
+          margin: 10px;
+          padding: 2px;
+          max-width: 400px;
+          height: 400px;
+        }
+      }
+      @media (max-width : 499px){
+        .card-box {
+          margin: 10px;
+          padding: 2px;
+          max-width: 400px;
+          max-height: 400px;
+        }
       }
       .close-button{
         position: absolute;
@@ -91,35 +102,56 @@
         height:100%;
         background-color: black;
       }
-      .desc a {
-        color: blue;
-        font-weight: bold;
-        text-decoration: none;
-      }
     </style>
     <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
     <paper-card elevation="1" class="card-box">
-      <paper-material elevation="0">
-        <paper-icon-button id="fullscreen_icon" class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
-        <paper-icon-button id="right_icon" class="right-button" icon="chevron-right" on-click="_NextPic"></paper-icon-button>
-        <paper-icon-button id="left_icon" class="left-button" icon="chevron-left" on-click="_PrevPic"></paper-icon-button>
-        <l2t-paper-slider id="slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
-          <template is="dom-repeat" items="{{imageUrls}}">
-            <paper-slide style="background-color: black"><img src="{{item.url}}" class="image"/></paper-slide>
-          </template>
-        </l2t-paper-slider>
-      </paper-material>
-      <paper-material elevation="0" style="max-height:135px; overflow:auto">
-        <h1>{{project.name}}</h1>
-        <hr>
-        <div id="desc" class="desc"></div>
-      </paper-material>
+      <template is="dom-if" if="{{_isEqualNumber(imageUrls.length, 0)}}">
+        <paper-material elevation="0" style="max-height:400px; overflow:auto">
+          <h1>{{project.name}}</h1>
+          <hr>
+          <shreya-project-details details="{{project.description}}"></shreya-project-details>
+        </paper-material>
+      </template>
+      <template is="dom-if" if="{{_isEqualNumber(imageUrls.length, 1)}}">
+        <paper-material elevation="0">
+          <paper-icon-button id="fullscreen_icon" class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
+          <l2t-paper-slider id="slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
+            <template is="dom-repeat" items="{{imageUrls}}">
+              <paper-slide style="background-color: black"><img src="{{item.url}}" class="image"/></paper-slide>
+            </template>
+          </l2t-paper-slider>
+        </paper-material>
+        <paper-material elevation="0" style="max-height:135px; overflow:auto">
+          <h1>{{project.name}}</h1>
+          <hr>
+          <shreya-project-details details="{{project.description}}"></shreya-project-details>
+        </paper-material>
+      </template>
+      <template is="dom-if" if="{{_isGreaterNumber(imageUrls.length, 1)}}">
+        <paper-material elevation="0">
+          <paper-icon-button id="fullscreen_icon" class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
+          <paper-icon-button id="right_icon" class="right-button" icon="chevron-right" on-click="_NextPic"></paper-icon-button>
+          <paper-icon-button id="left_icon" class="left-button" icon="chevron-left" on-click="_PrevPic"></paper-icon-button>
+          <l2t-paper-slider id="slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
+            <template is="dom-repeat" items="{{imageUrls}}">
+              <paper-slide style="background-color: black"><img src="{{item.url}}" class="image"/></paper-slide>
+            </template>
+          </l2t-paper-slider>
+        </paper-material>
+        <paper-material elevation="0" style="max-height:135px; overflow:auto">
+          <h1>{{project.name}}</h1>
+          <hr>
+          <shreya-project-details details="{{project.description}}"></shreya-project-details>
+        </paper-material>
+      </template>
     </paper-card>
     <paper-dialog id="fullscreen" with-backdrop="true" class="fullscreen-dialog">
       <paper-material elevation="0" class="fullscreen-paper-material">
         <paper-icon-button id="fullscreen_icon" class="close-button" icon="clear" on-click="_CloseFullscreen"></paper-icon-button>
-        <paper-icon-button id="right_icon" class="right-button" icon="chevron-right" on-click="_FNextPic"></paper-icon-button>
-        <paper-icon-button id="left_icon" class="left-button" icon="chevron-left" on-click="_FPrevPic"></paper-icon-button>
+        <template is="dom-if" if="{{_isGreaterNumber(imageUrls.length, 1)}}">
+          <paper-icon-button id="right_icon" class="right-button" icon="chevron-right" on-click="_FNextPic"></paper-icon-button>
+          <paper-icon-button id="left_icon" class="left-button" icon="chevron-left" on-click="_FPrevPic"></paper-icon-button>
+        </template>
         <l2t-paper-slider id="fullscreen_slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="fullscreen-slider">
           <template is="dom-repeat" items="{{imageUrls}}">
             <paper-slide style="background-color: black"><img src="{{item.url}}" class="fullscreen-image"/></paper-slide>
@@ -144,6 +176,12 @@
         /** The urls of all images in this project/image_folder */
         imageUrls : {
           type : Array,
+        },
+        /**
+        * The description of the project in the form of an HTML element
+        */
+        desc : {
+          type : Object
         }
       },
 
@@ -158,8 +196,27 @@
               this.imageUrls = results.value;
             }
           }.bind(this));
-          this.$.desc.innerHTML = this.project.description;
         }
+      },
+      /**
+      * Check if the numbers are equal for dom-if
+      * @param {Number} arg1
+      * @param {Number} arg2
+      * @return {Boolean}
+      */
+      _isEqualNumber : function(arg1, arg2){
+        if(arg1 === arg2) return true;
+        else return false;
+      },
+      /**
+      * Check if number arg1 is greater than number arg2 for dom-if
+      * @param {Number} arg1
+      * @param {Number} arg2
+      * @return {Boolean}
+      */
+      _isGreaterNumber : function(arg1, arg2){
+        if(arg1 > arg2) return true;
+        else return false;
       },
       /**
       * Navigate to next image in the slider

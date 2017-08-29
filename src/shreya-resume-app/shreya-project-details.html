@@ -1,0 +1,42 @@
+<!-- This is the description of a particular project project -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<!-- The default styles for this application -->
+<link rel="import" href="/src/shreya-resume-app/default-styles.html">
+
+<dom-module id="shreya-project-details">
+  <template>
+    <style include="default-styles"></style>
+    <style>
+      .desc a {
+        color: blue;
+        font-weight: bold;
+        text-decoration: none;
+      }
+    </style>
+    <div id='desc' class="desc"></div>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'shreya-project-details',
+
+      properties : {
+        /** The details received from parent */
+        details : {
+          type : String,
+        }
+      },
+
+      /**
+      * When ready append the string details as HTML
+      */
+      ready : function(){
+        if(this.details){
+          this.$.desc.innerHTML = this.details;
+        }
+      },
+    });
+  </script>
+</dom-module>
