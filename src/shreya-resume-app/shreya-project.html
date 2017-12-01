@@ -104,7 +104,7 @@
       }
     </style>
     <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
-    <paper-card elevation="1" class="card-box">
+    <paper-card id="container" elevation="1" class="card-box">
       <template is="dom-if" if="{{_isEqualNumber(imageUrls.length, 0)}}">
         <paper-material elevation="0" style="max-height:385px; overflow:auto">
           <h1>{{project.name}}</h1>
@@ -114,8 +114,8 @@
       </template>
       <template is="dom-if" if="{{_isEqualNumber(imageUrls.length, 1)}}">
         <paper-material elevation="0">
-          <paper-icon-button id="fullscreen_icon" class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
-          <l2t-paper-slider id="slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
+          <paper-icon-button class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
+          <l2t-paper-slider slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
             <template is="dom-repeat" items="{{imageUrls}}">
               <paper-slide style="background-color: black"><img src="{{item.url}}" class="image"/></paper-slide>
             </template>
@@ -129,10 +129,10 @@
       </template>
       <template is="dom-if" if="{{_isGreaterNumber(imageUrls.length, 1)}}">
         <paper-material elevation="0">
-          <paper-icon-button id="fullscreen_icon" class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
-          <paper-icon-button id="right_icon" class="right-button" icon="chevron-right" on-click="_NextPic"></paper-icon-button>
-          <paper-icon-button id="left_icon" class="left-button" icon="chevron-left" on-click="_PrevPic"></paper-icon-button>
-          <l2t-paper-slider id="slider" slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
+          <paper-icon-button class="fullscreen-button" icon="fullscreen" on-click="_OpenFullScreen"></paper-icon-button>
+          <paper-icon-button class="right-button" icon="chevron-right" on-click="_NextPic"></paper-icon-button>
+          <paper-icon-button class="left-button" icon="chevron-left" on-click="_PrevPic"></paper-icon-button>
+          <l2t-paper-slider slide-duration="2" total-slides="{{imageUrls.length}}" class="slider">
             <template is="dom-repeat" items="{{imageUrls}}">
               <paper-slide style="background-color: black"><img src="{{item.url}}" class="image"/></paper-slide>
             </template>
@@ -222,13 +222,13 @@
       * Navigate to next image in the slider
       */
       _NextPic : function(){
-        this.$.slider.moveNext();
+        this.$.container.querySelector('.slider').moveNext();
       },
       /**
       * Navigate to previous image in the slider
       */
       _PrevPic : function(){
-        this.$.slider.movePrev();
+        this.$.container.querySelector('.slider').movePrev();
       },
       /**
       * Open the full screen gallery
