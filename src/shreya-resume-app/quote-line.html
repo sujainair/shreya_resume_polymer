@@ -1,9 +1,12 @@
-<!-- This is a single line of quote that is displayed on the webpage. The quote is specified in firebase --> 
+<!-- This is a single line of quote that is displayed on the webpage. The quote is specified in firebase -->
 <!-- bower & polymer dependencies -->
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/bower_components/paper-material/paper-material.html">
+<link rel="import" href="/bower_components/iron-icons/editor-icons.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
 <!-- Application dependencies -->
 <link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<link rel="import" href="/src/shreya-resume-app/admin/editor/edit-quote.html">
 <!-- The default styles for this application -->
 <link rel="import" href="/src/shreya-resume-app/default-styles.html">
 
@@ -26,11 +29,20 @@
         color : black;
         font-family: "PT Mono", monospace;
       }
+      .edit_button {
+        color : black;
+      }
     </style>
     <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
     <paper-material elevation="1" class="quote">
       <span class="quote_mark"><sub>“</sub></span>{{quote}}
+      <template is="dom-if" if="{{admin}}">
+        <paper-icon-button class="edit_button" icon="editor:mode-edit" on-click="_Edit"></paper-icon-button>
+      </template>
     </paper-material>
+    <template is="dom-if" if="{{admin}}">
+      <edit-quote id="editor" updated="{{updated}}"></edit-quote>
+    </template>
   </template>
 
   <script>
@@ -42,18 +54,39 @@
         /** The qute line as defined in firebase */
         quote : {
           type : String
+        },
+        /** Show edit button if admin **/
+        admin : {
+          type : Boolean,
+          value : false
+        },
+        updated : {
+          type : Boolean,
+          observer : '_UpdateQuote'
         }
       },
 
       /**
-      * When ready get the quote string from firebase
+      * When ready, update quote
       */
       ready : function(){
-        this.$.myfirebase.getQuote()
-          .then(function(quote){
-            this.quote = quote.value;
-          }.bind(this));
+        this._UpdateQuote(true);
       },
+      /** Get the quote string from firebase */
+      _UpdateQuote : function(value){
+        if(value){
+          this.$.myfirebase.getQuote()
+            .then(function(quote){
+              this.set('quote', quote.value);
+            }.bind(this));
+        }
+      },
+      /**
+      * Open editor dialog
+      */
+      _Edit : function(){
+        this.$$('#editor').open();
+      }
     });
   </script>
 </dom-module>

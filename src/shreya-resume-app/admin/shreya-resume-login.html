@@ -1,0 +1,94 @@
+<!-- Show sign in with google option -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/iron-icon/iron-icon.html">>
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-firebase-admin-app.html">
+
+<dom-module id="shreya-resume-login">
+  <style>
+    .loginContainer {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .buttonBox {
+      height: 200px;
+      width: 300px;
+      margin-top: 10%;
+      border: 1px solid grey;
+      display: flex;
+      justify-content: center;
+    }
+    .buttonContainer {
+      margin-top: 25%;
+    }
+    .button {
+      background: white;
+      text-transform: none;
+    }
+    .icon {
+      margin-right: 10px;
+    }
+    .error {
+      color: red;
+      text-align: left;
+    }
+  </style>
+  <template>
+    <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
+    <div class="loginContainer">
+      <div class="buttonBox">
+        <div class="buttonContainer">
+          <paper-button class="button" on-click="_LoginWithGoogle">
+            <iron-icon class="icon" src="/images/google.jpg"></iron-icon>
+            Sign-in with Google
+          </paper-button>
+          <template is="dom-if" if="{{isError}}">
+            <div class="error">
+              You do not have admin access!
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'shreya-resume-login',
+
+      properties : {
+        /** Turns true if login is correct */
+        isAdmin : {
+          value : false,
+          type : Boolean,
+          notify : true,
+          readOnly : true
+        },
+        /** Turns true if login is wrong */
+        isError : {
+          value : false,
+          type : Boolean
+        }
+      },
+
+      _LoginWithGoogle : function(){
+        this.$.myfirebaseadmin.loginWithGoogle()
+          .then(function(isAdmin){
+            if(isAdmin){
+              this._setIsAdmin(true);
+            }
+            else {
+              this.set("isError", true);
+            }
+          }.bind(this))
+          .catch(function(){
+            this.set("isError", true);
+          }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

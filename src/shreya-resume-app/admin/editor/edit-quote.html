@@ -1,0 +1,125 @@
+<!-- Shows dialog to update the quote text -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-firebase-admin-app.html">
+
+<dom-module id="edit-quote">
+  <style>
+    h1 {
+      font-size: 18px;
+    }
+    p {
+      font-size: 12px;
+      margin: unset;
+      color: orange;
+    }
+    .button_container {
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .submit_button {
+      background: lightgreen;
+    }
+    .cancel_button {
+      background: grey;
+    }
+    .error {
+      color : red;
+      padding: 20px;
+      text-align: center;
+    }
+    .success {
+      color : green;
+      padding: 20px;
+      text-align: center;
+    }
+  </style>
+  <template>
+    <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
+    <paper-dialog id="editDialog" always-on-top >
+      <h1>Edit - Quote</h1>
+      <p>Leaving it blank will leave it unchanged.</p>
+      <paper-input id="quoteText" label="New quote text"></paper-input>
+      <template is="dom-if" if="{{quoteDone}}">
+        <div class="success">Quote updated</div>
+      </template>
+      <div class="button_container">
+        <paper-button class="submit_button" on-click="_Submit">Upload</paper-button>
+        <paper-button class="cancel_button" on-click="_Close">Close</paper-button>
+      </div>
+      <template is="dom-if" if="{{error}}">
+        <div class="error">[[errorMessage]]</div>
+      </template>
+    </paper-dialog>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'edit-quote',
+
+      properties : {
+        error : {
+          type : Boolean,
+          value : false
+        },
+        quoteDone : {
+          type : Boolean,
+          value : false
+        },
+        updated : {
+          type : Boolean,
+          notify : true,
+          readOnly : true
+        }
+      },
+      /** Open this editor dialog box */
+      open : function(){
+        this.$.editDialog.open();
+      },
+      /**
+      * When user clicks on the submit button, start uploading the data
+      */
+      _Submit : function(){
+        this.set("error", false);
+        var quoteText = this.$.quoteText.value;
+        if(quoteText != "" && quoteText != null){
+          this._UpdateQuote(quoteText);
+        }
+        else {
+          this.set("errorMessage", "Nothing to update");
+          this.set("error", true);
+        }
+      },
+      /**
+      * Close this dialog
+      */
+      _Close : function(){
+        this.set("error", false);
+        this.$.editDialog.close();
+      },
+      /**
+      * Update quote text
+      * @param {String} quoteText
+      */
+      _UpdateQuote : function(quoteText){
+        this.$.myfirebaseadmin.addData(quoteText, '/quote')
+        .then(function(){
+          this.set("quoteDone", true);
+          //notify parent
+          this._setUpdated(true);
+          this._setUpdated(false);
+        }.bind(this))
+        .catch(function(){
+          this.set("errorMessage", "Update failed, try again");
+          this.set("error", true);
+        }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

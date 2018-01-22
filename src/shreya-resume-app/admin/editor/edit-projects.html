@@ -1,0 +1,217 @@
+<!-- Shows dialog to update projects data -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/paper-input/paper-textarea.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-firebase-admin-app.html">
+
+<dom-module id="edit-projects">
+  <style>
+    h1 {
+      font-size: 18px;
+    }
+    p {
+      font-size: 12px;
+      margin: unset;
+      color: orange;
+    }
+    .button_container {
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .button {
+      text-transform: none;
+      padding: 2px;
+    }
+    .add_button {
+      background: greenyellow;
+    }
+    .preview_button {
+      background: lightblue;
+    }
+    .submit_button {
+      background: lightgreen;
+    }
+    .reset_button {
+      background: wheat;
+    }
+    .cancel_button {
+      background: grey;
+    }
+    .error {
+      color : red;
+      padding: 20px;
+      text-align: center;
+    }
+    .success {
+      color : green;
+      padding: 20px;
+      text-align: center;
+    }
+    .project {
+      border: 1px grey solid;
+      margin: 20px;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-around;
+    }
+    .title {
+      padding: 0px 20px;
+      width: 90%;
+    }
+  </style>
+  <template>
+    <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
+    <paper-dialog id="editDialog" always-on-top >
+      <h1>Edit - Projects</h1>
+      <p>Any blank value will also set. Blank Seq# will remove the project.</p>
+      <paper-dialog-scrollable>
+        <template is="dom-repeat" items="[[projects]]">
+          <div class="project">
+            <div class="header">
+              <paper-input id="seq_[[index]]" type="number" label="Seq#([[index]])" max="[[projects.length]]" min="0" value="[[index]]" auto-validate></paper-input>
+              <paper-input class="title" id="name_[[index]]" type="text" label="Title" value="[[item.name]]" auto-validate></paper-input>
+            </div>
+            <paper-textarea id="desc_[[index]]" label="Summary" value="[[item.description]]" auto-validate></paper-textarea>
+          </div>
+        </template>
+      </paper-dialog-scrollable>
+      <div class="button_container">
+        <paper-button class="button add_button" on-click="_Add">Add New</paper-button>
+        <paper-button class="button preview_button" on-click="_Preview">Preview</paper-button>
+        <paper-button class="button submit_button" on-click="_Submit">Upload</paper-button>
+        <paper-button class="button reset_button" on-click="_Reset">Reset</paper-button>
+        <paper-button class="button cancel_button" on-click="_Close">Close</paper-button>
+      </div>
+      <template is="dom-if" if="{{error}}">
+        <div class="error">[[errorMessage]]</div>
+      </template>
+    </paper-dialog>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'edit-projects',
+
+      properties : {
+        updated : {
+          type : Boolean,
+          notify : true,
+          readOnly : true
+        },
+        error : {
+          type : Boolean,
+          value : false
+        },
+      },
+      /**
+      * Open this editor dialog box
+      * @param {Array} projects The projects array from database
+      */
+      open : function(projects){
+        this.set("projects", projects.slice()); //for the view
+        this.set("orgProjects", projects.slice()); //to keep the original intact for reset
+        this.$.editDialog.open();
+      },
+      /**
+      * Add a new project
+      */
+      _Add : function(){
+        this.set("error", false);
+        var newProject = {
+          "description" : "",
+          "name" : ""
+        };
+        this.splice("projects",0,0,newProject);
+      },
+      /**
+      * When user clicks on the preview button, update the view
+      */
+      _Preview : function(){
+        this.set("error", false);
+        var newProjectsArr = []; //create a copy of the original
+        var lastIndex = this.projects.length - 1;
+        this.projects.forEach(function(project, index){
+          var description = this.$$('#desc_' + index).value;
+          var newProject = {
+            "description" : description ? description.replace(/\n/,"<br/>") : "",
+            "name" : this.$$('#name_' + index).value
+          };
+          if(project.image_folder) newProject["image_folder"] = project.image_folder;
+          var seq = parseInt(this.$$('#seq_' + index).value);
+          if(seq != index ) {
+            if(seq > lastIndex) {
+              //Invalid entry
+              this.set("errorMessage", "Invalid Seq# " + seq + ". Should be between 0 and " + lastIndex);
+              this.set("error", true);
+              return;
+            } else if(isNaN(seq)) {
+              //Delete item
+              newProjectsArr.splice(index, 1);
+              this.$$('#seq_' + index).value = index;
+            } else {
+              //Move item
+              newProjectsArr.splice(index, 1);
+              newProjectsArr.splice(seq, 0, newProject);
+              this.$$('#seq_' + index).value = index;
+            }
+          } else {
+            //Update only.
+            newProjectsArr.splice(seq, 0, newProject);
+          }
+          if(lastIndex === index) {
+            this.set("projects",newProjectsArr.slice());
+            console.log(this.projects);
+          }
+        }.bind(this));
+      },
+      /** Upload the changes */
+      _Submit : function(){
+        this.set("error", false);
+        this._Preview(); //make sure projects array is updated
+        var newProjectsArr = this.projects;
+        var lastIndex = newProjectsArr.length - 1;
+        var newProjects = {};
+        newProjectsArr.forEach(function(project, index){
+          newProjects[String(index + 1)] = project;
+          if(lastIndex === index){
+            console.log(newProjects);
+            this.$.myfirebaseadmin.addData(newProjects,"/projects")
+            .then(function(){
+              this.set("orgProjects", newProjectsArr.slice());
+              //notify parent
+              this._setUpdated(true);
+              this._setUpdated(false);
+            }.bind(this))
+            .catch(function(){
+              this.set("errorMessage", "Update failed, try again!");
+              this.set("error", true);
+            }.bind(this));
+          }
+        }.bind(this));
+
+      },
+      /** Reset to current database state */
+      _Reset : function(){
+        this.set("error", false);
+        this.projects = []; //ensure view is updated
+        this.projects = this.orgProjects.slice(); //set a copy of it.
+      },
+      /**
+      * Close this dialog
+      */
+      _Close : function(){
+        this.set("error", false);
+        this.$.editDialog.close();
+      }
+    });
+  </script>
+</dom-module>

@@ -109,7 +109,7 @@
         <paper-material elevation="0" style="max-height:385px; overflow:auto">
           <h1>{{project.name}}</h1>
           <hr>
-          <shreya-project-details details="{{project.description}}"></shreya-project-details>
+          <shreya-project-details id="details" details="{{project.description}}"></shreya-project-details>
         </paper-material>
       </template>
       <template is="dom-if" if="{{_isEqualNumber(imageUrls.length, 1)}}">
@@ -124,7 +124,7 @@
         <paper-material elevation="0" style="max-height:135px; overflow:auto">
           <h1>{{project.name}}</h1>
           <hr>
-          <shreya-project-details details="{{project.description}}"></shreya-project-details>
+          <shreya-project-details id="details" details="{{project.description}}"></shreya-project-details>
         </paper-material>
       </template>
       <template is="dom-if" if="{{_isGreaterNumber(imageUrls.length, 1)}}">
@@ -141,7 +141,7 @@
         <paper-material elevation="0" style="max-height:135px; overflow:auto">
           <h1>{{project.name}}</h1>
           <hr>
-          <shreya-project-details details="{{project.description}}"></shreya-project-details>
+          <shreya-project-details id="details" details="{{project.description}}"></shreya-project-details>
         </paper-material>
       </template>
     </paper-card>
@@ -182,6 +182,11 @@
         */
         desc : {
           type : Object
+        },
+        /** Show edit button if admin **/
+        admin : {
+          type : Boolean,
+          value : false
         }
       },
 
@@ -190,7 +195,16 @@
       */
       ready : function(){
         if(this.project){
-          this.$.myfirebase.getProjectImageUrls(this.project.image_folder)
+          this.updateProject(this.project);
+        }
+      },
+      /**
+      * Update project values
+      */
+      updateProject : function(project){
+        if(project){
+          this.set('project', project);
+          this.$.myfirebase.getProjectImageUrls(project.image_folder)
           .then(function(results){
             if(results.type === 'projectImageUrls'){
               this.imageUrls = results.value;

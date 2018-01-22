@@ -1,0 +1,44 @@
+<!-- This is the admin application. Shows login page by default and then the admin page after login -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-pages/iron-pages.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-header.html">
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-login.html">
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-admin-page.html">
+
+<dom-module id="shreya-resume-admin-app">
+  <template>
+    <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
+    <shreya-resume-header></shreya-resume-header>
+    <iron-pages selected="{{pageName}}" attr-for-selected="page-name" fallback-selection="login">
+      <shreya-resume-login page-name="login" is-admin="{{isAdmin}}"></shreya-resume-login>
+      <shreya-resume-admin-page page-name="admin_page"></shreya-resume-admin-page>
+    </iron-pages>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'shreya-resume-admin-app',
+
+      properties: {
+        /** Which page to show */
+        pageName : {
+          type : String,
+          value : "admin_page"
+        },
+        isAdmin : {
+          type : Boolean,
+          observer : "_isAdminChanged"
+        }
+      },
+
+      _isAdminChanged : function(value){
+        if(value){
+          this.set("pageName", "admin_page");
+        }
+      }
+    });
+  </script>
+</dom-module>

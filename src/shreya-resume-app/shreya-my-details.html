@@ -5,9 +5,11 @@
 <link rel="import" href="/bower_components/paper-material/paper-material.html">
 <link rel="import" href="/bower_components/paper-card/paper-card.html">
 <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
 <!-- Application dependencies -->
 <link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<link rel="import" href="/src/shreya-resume-app/admin/editor/edit-about.html">
 <!-- The default styles for this application -->
 <link rel="import" href="/src/shreya-resume-app/default-styles.html">
 
@@ -19,6 +21,11 @@
         @apply(--layout-horizontal);
         @apply(--layout-around-justified);
         @apply(--layout-wrap);
+      }
+      .about_header {
+        display: flex;
+        justify-content: flex-start;
+        width: 100%;
       }
       @media (max-width: 600px) {
         .profile_image {
@@ -63,14 +70,19 @@
     </style>
     <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
     <paper-material elevation="0">
-      <h1>About Me</h1>
+      <div class="about_header">
+        <h1>About Me</h1>
+        <template is="dom-if" if="{{admin}}">
+          <paper-icon-button icon="editor:mode-edit" on-click="_Edit"></paper-icon-button>
+        </template>
+      </div>
       <hr>
       <paper-material elevation="0" class="flex-items-layout" style="padding:10px" main>
         <paper-material id="profileImg" elevation="0" class="img-card">
           <img src="{{profileImg}}" class="profile_image"/>
         </paper-material>
         <paper-material id="intro" elevation="0" class="intro-card">
-          {{intro}}
+          <div id="introHtml"></div>
           <div>
             <hr>
             <paper-icon-button icon="mail" on-click="_OpenMail"></paper-icon-button><a href="mailto:shreyaganesh91@gmail.com"> shreyaganesh91@gmail.com</a>
@@ -78,6 +90,9 @@
         </paper-material>
       </paper-material>
     </paper-material>
+    <template is="dom-if" if="{{admin}}">
+      <edit-about id="editor" updated="{{updated}}"></edit-about>
+    </template>
   </template>
 
   <script>
@@ -93,27 +108,49 @@
         /** The url to profile image in firebase storage*/
         profileImg : {
           type : String
+        },
+        /** Show edit button if admin **/
+        admin : {
+          type : Boolean,
+          value : false
+        },
+        updated : {
+          type : Boolean,
+          observer : '_UpdateIntro'
         }
       },
 
       /**
-      * Get intro and profileImg values when ready
-      * Depending on the screen width also adjust the style
+      * When ready get Intro items
       */
       ready : function(){
-        this.$.myfirebase.getMyDetails()
-          .then(function(results){
-            if(results.type === 'myDetails'){
-              this.intro = results.value.my_intro;
-              this.profileImg = results.value.profileImg;
-            }
-          }.bind(this));
+        this._UpdateIntro(true);
+      },
+      /**
+      * Get intro and profileImg values from database
+      */
+      _UpdateIntro : function(value){
+        if(value){
+          this.$.myfirebase.getMyDetails()
+            .then(function(results){
+              if(results.type === 'myDetails'){
+                this.$.introHtml.innerHTML = results.value.my_intro;
+                this.set('profileImg', results.value.profileImg);
+              }
+            }.bind(this));
+        }
       },
       /**
       * Open the default mail client
       */
       _OpenMail : function(){
         window.location.href = "mailto:shreyaganesh91@gmail.com";
+      },
+      /**
+       * Open editor dialog
+       */
+      _Edit : function(){
+        this.$$("#editor").open();
       }
     });
   </script>
