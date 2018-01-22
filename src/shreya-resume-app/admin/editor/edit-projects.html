@@ -4,6 +4,8 @@
 <link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="/bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="/bower_components/paper-input/paper-input.html">
 <link rel="import" href="/bower_components/paper-input/paper-textarea.html">
 <!-- Application dependencies -->
@@ -18,6 +20,12 @@
       font-size: 12px;
       margin: unset;
       color: orange;
+    }
+    .edit_dialog {
+      transition-duration: 2s;
+    }
+    .edit_dialog_hide {
+      transform: translateY(-100%);
     }
     .button_container {
       padding: 20px;
@@ -40,8 +48,18 @@
     .reset_button {
       background: wheat;
     }
-    .cancel_button {
-      background: grey;
+    .close_icon {
+      position: absolute;
+      top: -10px;
+      right: 10px;
+    }
+    .pull_icon {
+      position: absolute;
+      bottom: -31px;
+      right: calc(50% - 20px);
+      background: white;
+      border-radius: 0 0 25px 25px;
+      box-shadow: 0 8px 10px -5px rgba(0, 0, 0, 0.4);
     }
     .error {
       color : red;
@@ -69,7 +87,7 @@
   </style>
   <template>
     <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
-    <paper-dialog id="editDialog" always-on-top >
+    <paper-dialog id="editDialog" class="edit_dialog" always-on-top >
       <h1>Edit - Projects</h1>
       <p>Any blank value will also set. Blank Seq# will remove the project.</p>
       <paper-dialog-scrollable>
@@ -83,13 +101,16 @@
           </div>
         </template>
       </paper-dialog-scrollable>
+      <paper-icon-button icon="clear" class="close_icon" on-click="_Close">Close</paper-icon-button>
       <div class="button_container">
         <paper-button class="button add_button" on-click="_Add">Add New</paper-button>
         <paper-button class="button preview_button" on-click="_Preview">Preview</paper-button>
         <paper-button class="button submit_button" on-click="_Submit">Upload</paper-button>
         <paper-button class="button reset_button" on-click="_Reset">Reset</paper-button>
-        <paper-button class="button cancel_button" on-click="_Close">Close</paper-button>
       </div>
+      <template is="dom-if" if="{{hidden}}">
+        <paper-icon-button icon="expand-more" class="pull_icon" on-click="_AnimateDown"></paper-icon-button>
+      </template>
       <template is="dom-if" if="{{error}}">
         <div class="error">[[errorMessage]]</div>
       </template>
@@ -102,8 +123,8 @@
       is: 'edit-projects',
 
       properties : {
-        updated : {
-          type : Boolean,
+        newProjects : {
+          type : Array,
           notify : true,
           readOnly : true
         },
@@ -169,7 +190,8 @@
           }
           if(lastIndex === index) {
             this.set("projects",newProjectsArr.slice());
-            console.log(this.projects);
+            this._setNewProjects(newProjectsArr.slice());
+            this._AnimateUp();
           }
         }.bind(this));
       },
@@ -183,13 +205,11 @@
         newProjectsArr.forEach(function(project, index){
           newProjects[String(index + 1)] = project;
           if(lastIndex === index){
-            console.log(newProjects);
             this.$.myfirebaseadmin.addData(newProjects,"/projects")
             .then(function(){
               this.set("orgProjects", newProjectsArr.slice());
               //notify parent
-              this._setUpdated(true);
-              this._setUpdated(false);
+              this._setNewProjects(null);
             }.bind(this))
             .catch(function(){
               this.set("errorMessage", "Update failed, try again!");
@@ -211,6 +231,22 @@
       _Close : function(){
         this.set("error", false);
         this.$.editDialog.close();
+      },
+      /**
+      * Move the dialog to the top to view the changes
+      * Show icon to put the dialog back into replace
+      */
+      _AnimateUp : function(){
+        this.$.editDialog.classList.add('edit_dialog_hide');
+        this.set('hidden', true);
+      },
+      /**
+      * Move the dialog back to normal location
+      * Hide the icon
+      */
+      _AnimateDown : function(){
+        this.$.editDialog.classList.remove('edit_dialog_hide');
+        this.set('hidden', false);
       }
     });
   </script>

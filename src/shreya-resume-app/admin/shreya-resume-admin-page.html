@@ -47,7 +47,7 @@
         <shreya-project id="proj_[[index]]" project="[[item]]" admin><shreya-project>
       </template>
     </paper-material>
-    <edit-projects id="editor" updated="{{updated}}"></edit-projects>
+    <edit-projects id="editor" new-projects="{{newProjects}}"></edit-projects>
   </template>
 
   <script>
@@ -61,8 +61,8 @@
           type : Array
         },
         //check when there is an update
-        updated : {
-          type : Boolean,
+        newProjects : {
+          type : Array,
           observer : '_UpdateProjects'
         }
       },
@@ -70,11 +70,16 @@
       * Get the list of projects from firebase when ready
       */
       ready : function(){
-        this._UpdateProjects(true);
+        this._UpdateProjects();
       },
-      /** Update the projects from database */
+      /**
+      * Update the projects from value
+      * OR from database if value is null/undefined
+      * */
       _UpdateProjects : function(value){
         if(value){
+          this.projects = value;
+        } else if(value === null || typeof(value) === 'undefined') {
           this.$.myfirebase.getProjects()
             .then(function(results){
               if(results.type === 'projects'){
