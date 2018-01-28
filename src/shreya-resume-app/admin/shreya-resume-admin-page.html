@@ -35,7 +35,7 @@
     <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
     <shreya-my-details admin></shreya-my-details>
     <quote-line admin></quote-line>
-    <top-card-scroller admin></top-card-scroller>
+    <!--<top-card-scroller admin></top-card-scroller>-->
     <div class="edit_projects">
       <paper-button class="edit_button" on-click="_Edit">
         <iron-icon icon="editor:mode-edit"></iron-icon>
@@ -44,7 +44,7 @@
     </div>
     <paper-material elevation="0" class="flex-items-layout" style="padding:10px;" main>
       <template is="dom-repeat" items="[[projects]]">
-        <shreya-project id="proj_[[index]]" project="[[item]]" admin><shreya-project>
+        <shreya-project id="proj_[[index]]" project="[[item]]" my-position="[[index]]" admin><shreya-project>
       </template>
     </paper-material>
     <edit-projects id="editor" new-projects="{{newProjects}}"></edit-projects>

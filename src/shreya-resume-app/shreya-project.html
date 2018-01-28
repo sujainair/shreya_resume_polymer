@@ -5,11 +5,13 @@
 <link rel="import" href="/bower_components/paper-card/paper-card.html">
 <link rel="import" href="/bower_components/l2t-paper-slider/l2t-paper-slider.html">
 <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
 <!-- Application dependencies -->
 <link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
 <link rel="import" href="/src/shreya-resume-app/shreya-project-details.html">
+<link rel="import" href="/src/shreya-resume-app/admin/editor/edit-project-images.html">
 <!-- The default styles for this application -->
 <link rel="import" href="/src/shreya-resume-app/default-styles.html">
 
@@ -102,6 +104,13 @@
         height:100%;
         background-color: black;
       }
+      .edit_icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: white;
+        border-radius: 20px;
+      }
     </style>
     <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
     <paper-card id="container" elevation="1" class="card-box">
@@ -144,6 +153,10 @@
           <shreya-project-details id="details" details="{{project.description}}"></shreya-project-details>
         </paper-material>
       </template>
+      <template is="dom-if" if="{{admin}}">
+        <paper-icon-button icon="editor:mode-edit" class="edit_icon" on-click="_Edit"></paper-icon-button>
+        <edit-project-images id="editor" image-urls="[[imageUrls]]" project="[[project]]" seq="[[myPosition]]"></edit-project-images>
+      </template>
     </paper-card>
     <paper-dialog id="fullscreen" with-backdrop="true" class="fullscreen-dialog">
       <paper-material elevation="0" class="fullscreen-paper-material">
@@ -171,7 +184,8 @@
         * Should be the same value as image_folder in firebase
         */
         project : {
-          type : Object
+          type : Object,
+          observer : '_UpdateImages'
         },
         /** The urls of all images in this project/image_folder */
         imageUrls : {
@@ -187,30 +201,26 @@
         admin : {
           type : Boolean,
           value : false
-        }
-      },
-
-      /**
-      * get details from firebase when ready
-      */
-      ready : function(){
-        if(this.project){
-          this.updateProject(this.project);
+        },
+        /** The project sequence */
+        myPosition : {
+          type : Number,
         }
       },
       /**
-      * Update project values
+      * Update the images when project is updated.
+      * Observer is used to create binding between images and project.
       */
-      updateProject : function(project){
-        if(project){
-          this.set('project', project);
-          this.$.myfirebase.getProjectImageUrls(project.image_folder)
+      _UpdateImages : function(){
+        var project = this.project;
+        if(project.image_folder && project.images){
+          this.$.myfirebase.getProjectImageUrls(project.image_folder, project.images)
           .then(function(results){
             if(results.type === 'projectImageUrls'){
               this.imageUrls = results.value;
             }
           }.bind(this));
-        }
+        } else this.imageUrls = [];
       },
       /**
       * Check if the numbers are equal for dom-if
@@ -267,6 +277,12 @@
       */
       _FPrevPic : function(){
         this.$.fullscreen_slider.movePrev();
+      },
+      /**
+      * Open editor dialog
+      */
+      _Edit : function(){
+        this.$$('#editor').open();
       }
     });
   </script>

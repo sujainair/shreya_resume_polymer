@@ -22,7 +22,7 @@
       color: orange;
     }
     .edit_dialog {
-      transition-duration: 2s;
+      transition-duration: 0.5s;
     }
     .edit_dialog_hide {
       transform: translateY(-100%);
@@ -35,18 +35,12 @@
     .button {
       text-transform: none;
       padding: 2px;
-    }
-    .add_button {
-      background: greenyellow;
-    }
-    .preview_button {
-      background: lightblue;
-    }
-    .submit_button {
       background: lightgreen;
     }
-    .reset_button {
-      background: wheat;
+    .delete_icon {
+      position: absolute;
+      top: 10px;
+      right: 10px;
     }
     .close_icon {
       position: absolute;
@@ -75,6 +69,7 @@
       border: 1px grey solid;
       margin: 20px;
       padding: 20px;
+      position: relative;
     }
     .header {
       display: flex;
@@ -89,24 +84,25 @@
     <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
     <paper-dialog id="editDialog" class="edit_dialog" always-on-top >
       <h1>Edit - Projects</h1>
-      <p>Any blank value will also set. Blank Seq# will remove the project.</p>
+      <p>Any blank value will also set.</p>
       <paper-dialog-scrollable>
         <template is="dom-repeat" items="[[projects]]">
           <div class="project">
+            <paper-icon-button icon="delete" class="delete_icon" on-click="_Delete"></paper-icon-button>
             <div class="header">
-              <paper-input id="seq_[[index]]" type="number" label="Seq#([[index]])" max="[[projects.length]]" min="0" value="[[index]]" auto-validate></paper-input>
+              <paper-input id="seq_[[index]]" type="number" label="Seq#([[index]])" max="[[maxSeq]]" min="0" value="[[index]]" auto-validate required></paper-input>
               <paper-input class="title" id="name_[[index]]" type="text" label="Title" value="[[item.name]]" auto-validate></paper-input>
             </div>
             <paper-textarea id="desc_[[index]]" label="Summary" value="[[item.description]]" auto-validate></paper-textarea>
           </div>
         </template>
       </paper-dialog-scrollable>
-      <paper-icon-button icon="clear" class="close_icon" on-click="_Close">Close</paper-icon-button>
+      <paper-icon-button icon="clear" class="close_icon" on-click="_Close"></paper-icon-button>
       <div class="button_container">
-        <paper-button class="button add_button" on-click="_Add">Add New</paper-button>
-        <paper-button class="button preview_button" on-click="_Preview">Preview</paper-button>
-        <paper-button class="button submit_button" on-click="_Submit">Upload</paper-button>
-        <paper-button class="button reset_button" on-click="_Reset">Reset</paper-button>
+        <paper-button class="button" on-click="_Add">Add New</paper-button>
+        <paper-button class="button" on-click="_Preview">Preview</paper-button>
+        <paper-button class="button" on-click="_Submit">Save</paper-button>
+        <paper-button class="button" on-click="_Reset">Reset</paper-button>
       </div>
       <template is="dom-if" if="{{hidden}}">
         <paper-icon-button icon="expand-more" class="pull_icon" on-click="_AnimateDown"></paper-icon-button>
@@ -133,14 +129,21 @@
           value : false
         },
       },
+      observers : [
+        '_projectsLengthChanged(projects.length)'
+      ],
       /**
       * Open this editor dialog box
       * @param {Array} projects The projects array from database
       */
       open : function(projects){
         this.set("projects", projects.slice()); //for the view
-        this.set("orgProjects", projects.slice()); //to keep the original intact for reset
+        if(! this.orgProjects) this.set("orgProjects", projects.slice()); //to keep the original intact for reset
         this.$.editDialog.open();
+      },
+      /** Update maxSeq when projects is updated */
+      _projectsLengthChanged : function(length) {
+        this.set("maxSeq", length - 1);
       },
       /**
       * Add a new project
@@ -154,46 +157,46 @@
         this.splice("projects",0,0,newProject);
       },
       /**
+      * Remove a project
+      */
+      _Delete : function(event){
+        this.splice("projects", this.projects.indexOf(event.model.item), 1);
+      },
+      /**
       * When user clicks on the preview button, update the view
       */
       _Preview : function(){
         this.set("error", false);
-        var newProjectsArr = []; //create a copy of the original
-        var lastIndex = this.projects.length - 1;
-        this.projects.forEach(function(project, index){
-          var description = this.$$('#desc_' + index).value;
+        var projects = this.projects;
+        //update the project values
+        for(var i=0; i < projects.length; i++){
+          var description = this.$$('#desc_' + i).value;
           var newProject = {
             "description" : description ? description.replace(/\n/,"<br/>") : "",
-            "name" : this.$$('#name_' + index).value
+            "name" : this.$$('#name_' + i).value
           };
-          if(project.image_folder) newProject["image_folder"] = project.image_folder;
-          var seq = parseInt(this.$$('#seq_' + index).value);
-          if(seq != index ) {
-            if(seq > lastIndex) {
-              //Invalid entry
-              this.set("errorMessage", "Invalid Seq# " + seq + ". Should be between 0 and " + lastIndex);
-              this.set("error", true);
-              return;
-            } else if(isNaN(seq)) {
-              //Delete item
-              newProjectsArr.splice(index, 1);
-              this.$$('#seq_' + index).value = index;
-            } else {
-              //Move item
-              newProjectsArr.splice(index, 1);
-              newProjectsArr.splice(seq, 0, newProject);
-              this.$$('#seq_' + index).value = index;
-            }
-          } else {
-            //Update only.
-            newProjectsArr.splice(seq, 0, newProject);
+          if(projects[i].image_folder) newProject["image_folder"] = projects[i].image_folder;
+          if(projects[i].images) newProject["images"] = projects[i].images;
+          projects[i] = newProject;
+        }
+        //Re-arrage or remove items according to change in seq
+        for(var i=0; i < projects.length; i++){
+          if(this.$$('#seq_' + i).invalid) {
+            this.set("errorMessage", "Invalid Seq# " + seq + ". Should be between 0 and " + lastIndex);
+            this.set("error", true);
+            return;
           }
-          if(lastIndex === index) {
-            this.set("projects",newProjectsArr.slice());
-            this._setNewProjects(newProjectsArr.slice());
-            this._AnimateUp();
+          var seq = parseInt(this.$$('#seq_' + i).value);
+          if(seq != i ) {
+            //Move item
+            projects.splice(seq, 0, projects.splice(i, 1)[0]);
+            this.$$('#seq_' + i).value = i;
           }
-        }.bind(this));
+        }
+        //Make sure the update is notified
+        this.set("projects",projects.slice());
+        this._setNewProjects(projects.slice());
+        this._AnimateUp();
       },
       /** Upload the changes */
       _Submit : function(){

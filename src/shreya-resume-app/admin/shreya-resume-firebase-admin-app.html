@@ -46,7 +46,15 @@
         });
         return uploadTasks;
       },
-
+      /**
+      * Remove file
+      * @param {String} filePath The complete path to file
+      * @return {Promise}
+      */
+      removeFile : function(filePath){
+        var storageRef = this.$.firebaseauth.app.storage().ref(filePath);
+        return storageRef.delete();
+      },
       /**
        * Add data to the database
        * @param {Object} data The data to add. Can be string or JSON

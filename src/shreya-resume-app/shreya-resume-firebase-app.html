@@ -101,33 +101,35 @@
       * Get the Array of urls for a given project's images.
       * projectName is the folder name of the images/project directory in firebase storage
       * @param {String} projectName
+      * @param {Array} imageNames
       * @return {Promise}
       */
-      getProjectImageUrls : function(projectName){
+      getProjectImageUrls : function(projectName, imageNames){
         return new Promise(function(resolve, reject) {
-          var fileNameCount = 1;
-          var results = [];
-          var storage = this.$.firebasedoc.app.storage();
-          var getUrls = function(storage, fileNameCount, results) {
-            var storageRef = storage.ref('/' + projectName + '/_' + fileNameCount + '.jpg');
-            storageRef.getDownloadURL()
-              .then(function(url){
-                results.push({url : url});
-                ++fileNameCount;
-                var storageRef = storage.ref('/' + projectName + '/_' + fileNameCount + '.jpg');
-                getUrls(storage, fileNameCount, results);
-              }.bind(this))
-              .catch(function(error){
-                if (error.code === "storage/object-not-found"){
-                  var finalResult = {
-                    type : 'projectImageUrls',
-                    value : results
+          if(projectName && imageNames) {
+            var results = [];
+            var storage = this.$.firebasedoc.app.storage();
+            var totalImages = imageNames.length;
+            var counter = 0;
+            imageNames.forEach(function(name, index){
+              var storageRef = storage.ref('/' + projectName + '/' + name);
+              storageRef.getDownloadURL()
+                .then(function(url){
+                  results[index] = {
+                    url : url,
+                    name : name
+                  };
+                  counter++;
+                  if(counter === totalImages){
+                    var finalResult = {
+                      type : 'projectImageUrls',
+                      value : results
+                    }
+                    resolve(finalResult);
                   }
-                  resolve(finalResult);
-                }
-              }.bind(this));
-          };
-          getUrls(storage, fileNameCount, results);
+                }.bind(this));
+            }.bind(this));
+          } else reject();
         }.bind(this));
       },
       /**
