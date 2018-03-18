@@ -37,11 +37,6 @@
       padding: 2px;
       background: lightgreen;
     }
-    .delete_icon {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-    }
     .close_icon {
       position: absolute;
       top: -10px;
@@ -88,10 +83,11 @@
       <paper-dialog-scrollable>
         <template is="dom-repeat" items="[[projects]]">
           <div class="project">
-            <paper-icon-button icon="delete" class="delete_icon" on-click="_Delete"></paper-icon-button>
             <div class="header">
-              <paper-input id="seq_[[index]]" type="number" label="Seq#([[index]])" max="[[maxSeq]]" min="0" value="[[index]]" auto-validate required></paper-input>
               <paper-input class="title" id="name_[[index]]" type="text" label="Title" value="[[item.name]]" auto-validate></paper-input>
+              <paper-icon-button icon="arrow-upward" on-click="_MoveUp"></paper-icon-button>
+              <paper-icon-button icon="arrow-downward" on-click="_MoveDown"></paper-icon-button>
+              <paper-icon-button icon="delete" on-click="_Delete"></paper-icon-button>
             </div>
             <paper-textarea id="desc_[[index]]" label="Summary" value="[[item.description]]" auto-validate></paper-textarea>
           </div>
@@ -159,8 +155,8 @@
       /**
       * Remove a project
       */
-      _Delete : function(event){
-        this.splice("projects", this.projects.indexOf(event.model.item), 1);
+      _Delete : function(e){
+        this.splice("projects", e.model.index, 1);
       },
       /**
       * When user clicks on the preview button, update the view
@@ -179,24 +175,46 @@
           if(projects[i].images) newProject["images"] = projects[i].images;
           projects[i] = newProject;
         }
-        //Re-arrage or remove items according to change in seq
-        for(var i=0; i < projects.length; i++){
-          if(this.$$('#seq_' + i).invalid) {
-            this.set("errorMessage", "Invalid Seq# " + seq + ". Should be between 0 and " + lastIndex);
-            this.set("error", true);
-            return;
-          }
-          var seq = parseInt(this.$$('#seq_' + i).value);
-          if(seq != i ) {
-            //Move item
-            projects.splice(seq, 0, projects.splice(i, 1)[0]);
-            this.$$('#seq_' + i).value = i;
-          }
-        }
         //Make sure the update is notified
         this.set("projects",projects.slice());
         this._setNewProjects(projects.slice());
         this._AnimateUp();
+      },
+      /**
+       * Update a project value before moving sequence
+       * @param {Integer} index
+       */
+      _UpdateProjectValues : function(index) {
+        var projects = this.projects;
+        var description = this.$$('#desc_' + index).value;
+        var newProject = {
+          "description" : description ? description.replace(/\n/,"<br/>") : "",
+          "name" : this.$$('#name_' + index).value
+        };
+        if(projects[index].image_folder) newProject["image_folder"] = projects[index].image_folder;
+        if(projects[index].images) newProject["images"] = projects[index].images;
+        projects[index] = newProject;
+        this.set("projects",projects.slice());
+      },
+      /**
+       * Move project up
+       */
+      _MoveUp : function(e) {
+        var index = e.model.index;
+        this._UpdateProjectValues(index);
+        if(index > 0) {
+          this.splice("projects", index - 1, 2, this.projects[index], this.projects[index - 1]);
+        }
+      },
+      /**
+       * Move project down
+       */
+      _MoveDown : function(e) {
+        var index = e.model.index;
+        this._UpdateProjectValues(index);
+        if(index < this.projects.length - 1) {
+          this.splice("projects", index, 2, this.projects[index + 1], this.projects[index]);
+        }
       },
       /** Upload the changes */
       _Submit : function(){

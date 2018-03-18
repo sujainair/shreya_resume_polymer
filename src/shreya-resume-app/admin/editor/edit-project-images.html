@@ -28,8 +28,8 @@
     }
     .delete_icon {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 20px;
+      right: 20px;
     }
     .close_icon {
       position: absolute;
@@ -66,18 +66,23 @@
       display: flex;
       justify-content: center;
     }
+    .header {
+      display: flex;
+      justify-content: flex-start;
+    }
   </style>
   <template>
     <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
     <paper-dialog id="editDialog" always-on-top >
       <h1>Edit - Images</h1>
-      <paper-input id="folderName" type="text" label="Folder Name" value="[[project.image_folder]]" auto-validate required disabled="[[project.image_folder]]"></paper-input>
+      <paper-input id="folderName" type="text" label="Folder Name" value="[[_ImageFolder(project)]]" auto-validate required disabled="[[project.image_folder]]"></paper-input>
       <paper-dialog-scrollable>
         <template is="dom-repeat" items="[[finalImages]]">
           <div class="image_container">
             <paper-icon-button icon="delete" class="delete_icon" on-click="_Delete"></paper-icon-button>
             <div class="header">
-              <paper-input id="seq_[[index]]" type="number" label="Seq#([[index]])" max="[[maxSeq]]" min="0" value="[[index]]" auto-validate required></paper-input>
+              <paper-icon-button icon="arrow-upward" on-click="_MoveUp"></paper-icon-button>
+              <paper-icon-button icon="arrow-downward" on-click="_MoveDown"></paper-icon-button>
             </div>
             <img src="[[item.url]]" class="image"></img>
           </div>
@@ -90,7 +95,6 @@
       <paper-icon-button icon="clear" class="close_icon" on-click="_Close"></paper-icon-button>
       <template is="dom-if" if="{{! uploading}}">
         <div class="button_container">
-            <paper-button class="button" on-click="_ReArrange">Re-Arrange</paper-button>
             <paper-button class="button" on-click="_Submit">Save</paper-button>
             <paper-button class="button" on-click="_Reset">Reset</paper-button>
         </div>
@@ -171,6 +175,14 @@
         }
         this.$.editDialog.open();
       },
+      /**
+       * Return the current project image_folder value
+       * If empty, use the project title to create suggested value
+       */
+      _ImageFolder : function(project) {
+        if(project.image_folder) return project.image_folder;
+        else return project.name.replace(/[^a-zA-Z0-9]/g,"_");
+      },
       /** Update maxSeq when finalImages is updated */
       _finalImagesLengthChanged : function(length){
         this.set("maxSeq", length - 1);
@@ -227,27 +239,24 @@
         }
       },
       /**
-      * Update the sequence changes.
-      */
-      _ReArrange : function(){
-        var finalImages = this.finalImages.slice();
-        var imageSeq = this.imageSeq.slice();
-        for (var i=0; i < finalImages.length; i++) {
-          if(this.$$("#seq_" + i).invalid){
-            this.set("errorMessage", "Invalid seq number");
-            this.set("error", true);
-            return;
-          }
-          var newSeq = parseInt(this.$$("#seq_" + i).value);
-          if(newSeq != i) {
-            //Move item
-            finalImages.splice(newSeq, 0, finalImages.splice(i, 1)[0]);
-            imageSeq.splice(newSeq, 0, imageSeq.splice(i, 1)[0]);
-            this.$$('#seq_' + i).value = i;
-          }
+       * Move the image up one sequence
+       */
+      _MoveUp : function(e) {
+        var index = e.model.index;
+        if(index > 0) {
+          this.splice("finalImages", index - 1, 2, this.finalImages[index], this.finalImages[index - 1]);
+          this.splice("imageSeq", index - 1, 2, this.imageSeq[index], this.imageSeq[index - 1]);
         }
-        this.finalImages = finalImages;
-        this.imageSeq = imageSeq;
+      },
+      /**
+       * Move the image down one sequence
+       */
+      _MoveDown : function(e) {
+        var index = e.model.index;
+        if(index < this.finalImages.length - 1) {
+          this.splice("finalImages", index, 2, this.finalImages[index + 1], this.finalImages[index]);
+          this.splice("imageSeq", index, 2, this.imageSeq[index + 1], this.imageSeq[index]);
+        }
       },
       /**
       * Reset the variables that were edited
