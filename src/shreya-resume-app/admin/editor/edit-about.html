@@ -1,0 +1,178 @@
+<!-- Shows a dialog for editing the About Me section. -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="/bower_components/paper-progress/paper-progress.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-firebase-admin-app.html">
+
+<dom-module id="edit-about">
+  <style>
+    h1 {
+      font-size: 18px;
+    }
+    p {
+      font-size: 12px;
+      margin: unset;
+      color: orange;
+    }
+    .button_container {
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .submit_button {
+      background: lightgreen;
+    }
+    .cancel_button {
+      background: grey;
+    }
+    .error {
+      color : red;
+      padding: 20px;
+      text-align: center;
+    }
+    .success {
+      color : green;
+      padding: 20px;
+      text-align: center;
+    }
+  </style>
+  <template>
+    <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
+    <paper-dialog id="editDialog" always-on-top >
+      <h1>Edit - About Me</h1>
+      <p>Leaving it blank will leave it unchanged.</p>
+      <paper-input id="profileImg" type="file" accept=".jpg" label="Choose a new profile picture (.jpg|250Kb)" auto-validate error-message="Choose a valid image in .jpg format"></paper-input>
+      <template is="dom-if" if="{{imgDone}}">
+        <div class="success">Profile image updated</div>
+      </template>
+      <paper-textarea id="aboutText" label="New about text" auto-validate></paper-textarea>
+      <template is="dom-if" if="{{aboutDone}}">
+        <div class="success">About text updated</div>
+      </template>
+      <div class="button_container">
+        <template is="dom-if" if="{{! uploading}}">
+          <paper-button class="submit_button" on-click="_Submit">Save</paper-button>
+          <paper-button class="cancel_button" on-click="_Close">Close</paper-button>
+        </template>
+        <template is="dom-if" if="{{uploading}}">
+          <paper-progress value="[[uploadProgress]]"></paper-progress>
+        </template>
+      </div>
+      <template is="dom-if" if="{{error}}">
+        <div class="error">[[errorMessage]]</div>
+      </template>
+    </paper-dialog>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'edit-about',
+
+      properties : {
+        uploading : {
+          type : Boolean,
+          value : false
+        },
+        error : {
+          type : Boolean,
+          value : false
+        },
+        imgDone : {
+          type : Boolean,
+          value : false
+        },
+        aboutDone : {
+          type : Boolean,
+          value : false
+        },
+        updated : {
+          type : Boolean,
+          notify : true,
+          readOnly : true
+        }
+      },
+      /** Open this editor dialog box */
+      open : function(){
+        this.$.editDialog.open();
+      },
+      /**
+      * When user clicks on the submit button, start uploading the data
+      */
+      _Submit : function(){
+        this.set("error", false);
+        var profileImg = this.$.profileImg.inputElement.inputElement.files[0];
+        var aboutText = this.$.aboutText.value;
+        if(profileImg != null){
+          this._UploadProfileImg(profileImg);
+        }
+        if(aboutText != "" && aboutText != null){
+          this._UpdateIntro(aboutText);
+        }
+        if((aboutText == "" || aboutText == null) && profileImg == null) {
+          this.set("errorMessage", "Nothing to update");
+          this.set("error", true);
+        }
+      },
+      /**
+      * Close this dialog
+      */
+      _Close : function(){
+        this.set("error", false);
+        this.$.editDialog.close();
+      },
+      /**
+      * Upload the new profile image
+      * @param {File} profileImg
+      */
+      _UploadProfileImg : function(profileImg){
+        var files = [{
+          file : profileImg,
+          name : 'profile.jpg'
+        }];
+        var uploadTask = this.$.myfirebaseadmin.uploadFiles(files, '/')[0];
+        this.set("uploading", true);
+        uploadTask.on('state_changed', function(snapshot){
+          // Observe state change events such as progress, pause, and resume
+          // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+          var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          this.set("uploadProgress", progress);
+        }.bind(this), function(error) {
+          this.set("errorMessage", "Upload failed, try again");
+          this.set("error", true);
+          this.set("uploading", false);
+        }.bind(this), function() {
+          // Handle successful uploads on complete
+          this.set("uploading", false);
+          this.set("imgDone", true);
+          //notify parent
+          this._setUpdated(true);
+          this._setUpdated(false);
+        }.bind(this));
+      },
+      /**
+      * Update intro text
+      * @param {String} aboutText
+      */
+      _UpdateIntro : function(aboutText){
+        aboutText = aboutText.replace(/\n/,'<br/>');
+        this.$.myfirebaseadmin.addData(aboutText, '/my_intro')
+        .then(function(){
+          this.set("aboutDone", true);
+          //notify parent
+          this._setUpdated(true);
+          this._setUpdated(false);
+        }.bind(this))
+        .catch(function(){
+          this.set("errorMessage", "Upload failed, try again");
+          this.set("error", true);
+        }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

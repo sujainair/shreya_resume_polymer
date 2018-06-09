@@ -31,7 +31,7 @@
               for (var seq in projects){
                 if (projects.hasOwnProperty(seq)){
                   var folder = projects[seq].image_folder;
-                  var storageRef = this.$.firebasedoc.app.storage().refFromURL('gs://shreyaganesh-788d8.appspot.com/' + folder + '/_1.jpg');
+                  var storageRef = this.$.firebasedoc.app.storage().ref('/' + folder + '/_1.jpg');
                   storageRef.getDownloadURL().then(function(url){
                     result.push({url : url});
                     count++;
@@ -101,33 +101,35 @@
       * Get the Array of urls for a given project's images.
       * projectName is the folder name of the images/project directory in firebase storage
       * @param {String} projectName
+      * @param {Array} imageNames
       * @return {Promise}
       */
-      getProjectImageUrls : function(projectName){
+      getProjectImageUrls : function(projectName, imageNames){
         return new Promise(function(resolve, reject) {
-          var fileNameCount = 1;
-          var results = [];
-          var storage = this.$.firebasedoc.app.storage();
-          var getUrls = function(storage, fileNameCount, results) {
-            var storageRef = storage.refFromURL('gs://shreyaganesh-788d8.appspot.com/' + projectName + '/_' + fileNameCount + '.jpg');
-            storageRef.getDownloadURL()
-              .then(function(url){
-                results.push({url : url});
-                ++fileNameCount;
-                var storageRef = storage.refFromURL('gs://shreyaganesh-788d8.appspot.com/' + projectName + '/_' + fileNameCount + '.jpg');
-                getUrls(storage, fileNameCount, results);
-              }.bind(this))
-              .catch(function(error){
-                if (error.code === "storage/object-not-found"){
-                  var finalResult = {
-                    type : 'projectImageUrls',
-                    value : results
+          if(projectName && imageNames) {
+            var results = [];
+            var storage = this.$.firebasedoc.app.storage();
+            var totalImages = imageNames.length;
+            var counter = 0;
+            imageNames.forEach(function(name, index){
+              var storageRef = storage.ref('/' + projectName + '/' + name);
+              storageRef.getDownloadURL()
+                .then(function(url){
+                  results[index] = {
+                    url : url,
+                    name : name
+                  };
+                  counter++;
+                  if(counter === totalImages){
+                    var finalResult = {
+                      type : 'projectImageUrls',
+                      value : results
+                    }
+                    resolve(finalResult);
                   }
-                  resolve(finalResult);
-                }
-              }.bind(this));
-          };
-          getUrls(storage, fileNameCount, results);
+                }.bind(this));
+            }.bind(this));
+          } else reject();
         }.bind(this));
       },
       /**
@@ -148,7 +150,7 @@
             }
           });
           var storage = this.$.firebasedoc.app.storage();
-          var storageRef = storage.refFromURL('gs://shreyaganesh-788d8.appspot.com/profile.jpg');
+          var storageRef = storage.ref('/profile.jpg');
           storageRef.getDownloadURL().then(function(url){
             results.value.profileImg = url;
             if(results.value.my_intro){

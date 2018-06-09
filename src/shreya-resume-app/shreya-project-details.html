@@ -26,6 +26,7 @@
         /** The details received from parent */
         details : {
           type : String,
+          observer : 'updateDetails'
         }
       },
 
@@ -34,9 +35,15 @@
       */
       ready : function(){
         if(this.details){
-          this.$.desc.innerHTML = this.details;
+          this.updateDetails(this.details);
         }
       },
+      /** Update details
+      * @param {String} details as HTML 
+      */
+      updateDetails : function(details){
+        this.$.desc.innerHTML = details;
+      }
     });
   </script>
 </dom-module>

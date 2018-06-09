@@ -1,0 +1,377 @@
+<!-- Shows a dialog for editing the images in a project. -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/paper-progress/paper-progress.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-firebase-admin-app.html">
+
+<dom-module id="edit-project-images">
+  <style>
+    h1 {
+      font-size: 18px;
+    }
+    .button_container {
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .button {
+      text-transform: none;
+      padding: 2px;
+      background: lightgreen;
+    }
+    .delete_icon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+    .close_icon {
+      position: absolute;
+      top: -10px;
+      right: 10px;
+    }
+    .upload_icon {
+      margin-top: 20px;
+    }
+    .error {
+      color : red;
+      padding: 20px;
+      text-align: center;
+    }
+    .success {
+      color : green;
+      padding: 20px;
+      text-align: center;
+    }
+    .image_container {
+      border: 1px grey solid;
+      margin: 20px;
+      padding: 20px;
+      position: relative;
+    }
+    .image {
+      margin: 10px;
+      padding: 2px;
+      max-width: 95%;
+      max-height: 210px;
+    }
+    .progress_bars {
+      max-width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .header {
+      display: flex;
+      justify-content: flex-start;
+    }
+  </style>
+  <template>
+    <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
+    <paper-dialog id="editDialog" always-on-top >
+      <h1>Edit - Images</h1>
+      <paper-input id="folderName" type="text" label="Folder Name" value="[[_ImageFolder(project)]]" auto-validate required disabled="[[project.image_folder]]"></paper-input>
+      <paper-dialog-scrollable>
+        <template is="dom-repeat" items="[[finalImages]]">
+          <div class="image_container">
+            <paper-icon-button icon="delete" class="delete_icon" on-click="_Delete"></paper-icon-button>
+            <div class="header">
+              <paper-icon-button icon="arrow-upward" on-click="_MoveUp"></paper-icon-button>
+              <paper-icon-button icon="arrow-downward" on-click="_MoveDown"></paper-icon-button>
+            </div>
+            <img src="[[item.url]]" class="image"></img>
+          </div>
+        </template>
+      </paper-dialog-scrollable>
+      <div style="display:flex">
+        <paper-input id="newImgs" type="file" accept=".jpg" label="Choose a new profile picture (.jpg|250Kb)" auto-validate error-message="Choose a valid image in .jpg format" multiple></paper-input>
+        <paper-icon-button icon="file-upload" class="upload_icon" on-click="_Upload"></paper-icon-button>
+      </div>
+      <paper-icon-button icon="clear" class="close_icon" on-click="_Close"></paper-icon-button>
+      <template is="dom-if" if="{{! uploading}}">
+        <div class="button_container">
+            <paper-button class="button" on-click="_Submit">Save</paper-button>
+            <paper-button class="button" on-click="_Reset">Reset</paper-button>
+        </div>
+      </template>
+      <template is="dom-if" if="{{uploading}}">
+        <paper-dialog-scrollable>
+          <template is="dom-repeat" items="[[uploadingImages]]">
+            <div style="display:flex;">
+              <paper-progress value="[[item.uploadProgress]]"></paper-progress>[[item.name]]
+            </div>
+          </template>
+        </paper-dialog-scrollable>
+      </template>
+      <template is="dom-if" if="{{success}}">
+        <div class="success">Changes saved! Refresh page to check.</div>
+      </template>
+      <template is="dom-if" if="{{error}}">
+        <div class="error">[[errorMessage]]</div>
+      </template>
+    </paper-dialog>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'edit-project-images',
+
+      properties : {
+        uploading : {
+          type : Boolean,
+          value : false
+        },
+        success : {
+          type : Boolean,
+          value : false
+        },
+        error : {
+          type : Boolean,
+          value : false
+        },
+        imageUrls : {
+          type : Array,
+          value : []
+        },
+        project : {
+          type : Object
+        },
+        seq : {
+          type : Number
+        },
+        //The edited properties
+        finalImages : {
+          type : Array,
+          value : null
+        },
+        imageSeq : {
+          type : Array,
+          value : null
+        },
+        removedImages : {
+          type : Array,
+          value : []
+        }
+      },
+      observers : [
+        '_finalImagesLengthChanged(finalImages.length)',
+      ],
+      /** Open this editor dialog box */
+      open : function(){
+        //create a copy of the variables to edit
+        if(! this.finalImages) {
+          if(this.imageUrls && this.imageUrls.length > 0 ) this.set("finalImages", this.imageUrls.slice());
+          else this.set("finalImages", []);
+        }
+        if(! this.imageSeq) {
+          if(this.project.images && this.project.images.length > 0) this.set("imageSeq", this.project.images.slice());
+          else this.set("imageSeq", []);
+        }
+        this.$.editDialog.open();
+      },
+      /**
+       * Return the current project image_folder value
+       * If empty, use the project title to create suggested value
+       */
+      _ImageFolder : function(project) {
+        if(project.image_folder) return project.image_folder;
+        else return project.name.replace(/[^a-zA-Z0-9]/g,"_");
+      },
+      /** Update maxSeq when finalImages is updated */
+      _finalImagesLengthChanged : function(length){
+        this.set("maxSeq", length - 1);
+      },
+      /**
+      * Remove an image
+      */
+      _Delete : function(event){
+        var itemIndex = event.model.index;
+        this.push("removedImages", this.splice("finalImages", itemIndex, 1)[0]);
+        this.splice("imageSeq", itemIndex, 1);
+      },
+      /**
+      * Upload the new files and preview them
+      */
+      _Upload : function() {
+        this.set("error", false);
+        var folderName = this.$.folderName.value.replace(/[^a-zA-Z0-9]/g,"_");
+        if(folderName == null || folderName == "") {
+          this.set("finalImages", []);
+          this.set("errorMessage","Folder name cannot be empty!")
+          this.set("error", true);
+          return;
+        }
+        var images = this.$.newImgs.inputElement.inputElement.files;
+        //reset variables
+        var finalImages = this.imageUrls.slice();
+        var imageSeq = this.imageSeq.slice();
+        if(images.length > 0){
+          var totalFinalImages = this.imageUrls.length + images.length;
+          for (var i = 0, image; image = images[i]; i++) {
+            if(imageSeq.indexOf(image.name) != -1) {
+              this.set("errorMessage","Duplicate file name!")
+              this.set("error", true);
+              return;
+            }
+            var reader = new FileReader();
+            function updateVariables(e){
+              finalImages.push({
+                url : e.target.result,
+                name : updateVariables.image.name,
+                file : updateVariables.image
+              });
+              imageSeq.push(updateVariables.image.name);
+              if(finalImages.length === totalFinalImages) {
+                this.finalImages = finalImages;
+                this.imageSeq = imageSeq;
+              }
+            }
+            updateVariables.image = image;
+            reader.onload = updateVariables.bind(this);
+            reader.readAsDataURL(image);
+          }
+        }
+        this.$.editDialog.fit();
+      },
+      /**
+       * Move the image up one sequence
+       */
+      _MoveUp : function(e) {
+        var index = e.model.index;
+        if(index > 0) {
+          this.splice("finalImages", index - 1, 2, this.finalImages[index], this.finalImages[index - 1]);
+          this.splice("imageSeq", index - 1, 2, this.imageSeq[index], this.imageSeq[index - 1]);
+        }
+      },
+      /**
+       * Move the image down one sequence
+       */
+      _MoveDown : function(e) {
+        var index = e.model.index;
+        if(index < this.finalImages.length - 1) {
+          this.splice("finalImages", index, 2, this.finalImages[index + 1], this.finalImages[index]);
+          this.splice("imageSeq", index, 2, this.imageSeq[index + 1], this.imageSeq[index]);
+        }
+      },
+      /**
+      * Reset the variables that were edited
+      */
+      _Reset : function(){
+        this.set("error", false);
+        if(this.imageUrls && this.imageUrls.length > 0 ) this.set("finalImages", this.imageUrls.slice());
+        else this.set("finalImages", []);
+        if(this.project.images && this.project.images.length > 0) this.set("imageSeq", this.project.images.slice());
+        else this.set("imageSeq", []);
+        this.removedImages = [];
+      },
+      /**
+      * When user clicks on the submit button,
+      * Upload new images and save new sequence.
+      */
+      _Submit : function(){
+        this.set("error", false);
+        var newImages = [];
+        var lastIndex = this.finalImages.length - 1;
+        var onlyReArrange = true;
+        this.finalImages.forEach(function(image, index){
+          if(image.file) {
+            newImages.push(image.file);
+          }
+          if(index === lastIndex && newImages.length > 0){
+            this._UploadImages(newImages);
+            onlyReArrange = false;
+          }
+        }.bind(this));
+        if(this.removedImages.length > 0) {
+          this._RemoveImages();
+          onlyReArrange = false;
+        }
+        this._UploadImageData();
+      },
+      /**
+      * Close this dialog
+      */
+      _Close : function(){
+        this.set("error", false);
+        this.$.editDialog.close();
+      },
+      /**
+      * Upload the new Images
+      * @param {File[]} images
+      */
+      _UploadImages : function(images){
+        var files = [];
+        this.set("uploading", true);
+        this.set("uploadingImages", []);
+        images.forEach(function(image, index){
+          files.push({
+            file : image,
+            name : image.name
+          });
+          this.push("uploadingImages",{
+            uploadProgress : 0,
+            name : image.name
+          });
+        }.bind(this));
+        var uploadTasks = this.$.myfirebaseadmin.uploadFiles(files, '/' + this.$.folderName.value.replace(/[^a-zA-Z0-9]/g,"_"));
+        var uploadedCount = 0;
+        uploadTasks.forEach(function(task, index){
+          task.number = index;
+          task.on('state_changed', function(snapshot){
+            // Observe state change events such as progress, pause, and resume
+            // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+            var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            this.uploadingImages[task.number].uploadProgress = progress;
+            this.notifyPath("uploadingImages." + task.number + ".uploadProgress");
+          }.bind(this),function(error) {
+            this.set("errorMessage", "Upload failed, Refresh page and try again");
+            this.set("error", true);
+            this.set("uploading", false);
+          }.bind(this), function() {
+            // Handle successful uploads on complete
+            uploadedCount++;
+            if(this.uploadingImages.length === uploadedCount) {
+              this.set("uploading", false);
+              this.uploadingImages = [];
+            }
+          }.bind(this));
+        }.bind(this));
+      },
+      _RemoveImages : function(){
+        this.removedImages.forEach(function(image){
+          this.$.myfirebaseadmin.removeFile('/' + this.$.folderName.value.replace(/[^a-zA-Z0-9]/g,"_") + '/' + image.name)
+          .catch(function(){
+            this.set("errorMessage","Some images were not removed, try manually");
+            this.set("error", true);
+          }.bind(this));
+        }.bind(this));
+      },
+      /**
+      * Upload the folder and imageSeq data to database
+      */
+      _UploadImageData : function(){
+        var image_folder = this.$.folderName.value.replace(/[^a-zA-Z0-9]/g,"_");
+        var images = this.imageSeq;
+        var myPosition = this.seq + 1;
+        var basePath = "/projects/" + myPosition + "/";
+        this.$.myfirebaseadmin.addData(image_folder, basePath + "image_folder")
+        .then(function(){
+          this.$.myfirebaseadmin.addData(images, basePath + "images")
+          .then(function(){
+            this.set("success", true);
+          }.bind(this));
+        }.bind(this))
+        .catch(function(error){
+          this.set("errorMessage", "Something went wrong, refresh and try again");
+          this.set("error", true);
+        }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

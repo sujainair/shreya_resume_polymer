@@ -1,0 +1,274 @@
+<!-- Shows dialog to update projects data -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/paper-input/paper-textarea.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/admin/shreya-resume-firebase-admin-app.html">
+
+<dom-module id="edit-projects">
+  <style>
+    h1 {
+      font-size: 18px;
+    }
+    p {
+      font-size: 12px;
+      margin: unset;
+      color: orange;
+    }
+    .edit_dialog {
+      transition-duration: 0.5s;
+    }
+    .edit_dialog_hide {
+      transform: translateY(-100%);
+    }
+    .button_container {
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .button {
+      text-transform: none;
+      padding: 2px;
+      background: lightgreen;
+    }
+    .close_icon {
+      position: absolute;
+      top: -10px;
+      right: 10px;
+    }
+    .pull_icon {
+      position: absolute;
+      bottom: -31px;
+      right: calc(50% - 20px);
+      background: white;
+      border-radius: 0 0 25px 25px;
+      box-shadow: 0 8px 10px -5px rgba(0, 0, 0, 0.4);
+    }
+    .error {
+      color : red;
+      padding: 20px;
+      text-align: center;
+    }
+    .success {
+      color : green;
+      padding: 20px;
+      text-align: center;
+    }
+    .project {
+      border: 1px grey solid;
+      margin: 20px;
+      padding: 20px;
+      position: relative;
+    }
+    .header {
+      display: flex;
+      justify-content: space-around;
+    }
+    .title {
+      padding: 0px 20px;
+      width: 90%;
+    }
+  </style>
+  <template>
+    <shreya-resume-firebase-admin-app id="myfirebaseadmin"></shreya-resume-firebase-admin-app>
+    <paper-dialog id="editDialog" class="edit_dialog" always-on-top >
+      <h1>Edit - Projects</h1>
+      <p>Any blank value will also set.</p>
+      <paper-dialog-scrollable>
+        <template is="dom-repeat" items="[[projects]]">
+          <div class="project">
+            <div class="header">
+              <paper-input class="title" id="name_[[index]]" type="text" label="Title" value="[[item.name]]" auto-validate></paper-input>
+              <paper-icon-button icon="arrow-upward" on-click="_MoveUp"></paper-icon-button>
+              <paper-icon-button icon="arrow-downward" on-click="_MoveDown"></paper-icon-button>
+              <paper-icon-button icon="delete" on-click="_Delete"></paper-icon-button>
+            </div>
+            <paper-textarea id="desc_[[index]]" label="Summary" value="[[item.description]]" auto-validate></paper-textarea>
+          </div>
+        </template>
+      </paper-dialog-scrollable>
+      <paper-icon-button icon="clear" class="close_icon" on-click="_Close"></paper-icon-button>
+      <div class="button_container">
+        <paper-button class="button" on-click="_Add">Add New</paper-button>
+        <paper-button class="button" on-click="_Preview">Preview</paper-button>
+        <paper-button class="button" on-click="_Submit">Save</paper-button>
+        <paper-button class="button" on-click="_Reset">Reset</paper-button>
+      </div>
+      <template is="dom-if" if="{{hidden}}">
+        <paper-icon-button icon="expand-more" class="pull_icon" on-click="_AnimateDown"></paper-icon-button>
+      </template>
+      <template is="dom-if" if="{{error}}">
+        <div class="error">[[errorMessage]]</div>
+      </template>
+    </paper-dialog>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'edit-projects',
+
+      properties : {
+        newProjects : {
+          type : Array,
+          notify : true,
+          readOnly : true
+        },
+        error : {
+          type : Boolean,
+          value : false
+        },
+      },
+      observers : [
+        '_projectsLengthChanged(projects.length)'
+      ],
+      /**
+      * Open this editor dialog box
+      * @param {Array} projects The projects array from database
+      */
+      open : function(projects){
+        this.set("projects", projects.slice()); //for the view
+        if(! this.orgProjects) this.set("orgProjects", projects.slice()); //to keep the original intact for reset
+        this.$.editDialog.open();
+      },
+      /** Update maxSeq when projects is updated */
+      _projectsLengthChanged : function(length) {
+        this.set("maxSeq", length - 1);
+      },
+      /**
+      * Add a new project
+      */
+      _Add : function(){
+        this.set("error", false);
+        var newProject = {
+          "description" : "",
+          "name" : ""
+        };
+        this.splice("projects",0,0,newProject);
+      },
+      /**
+      * Remove a project
+      */
+      _Delete : function(e){
+        this.splice("projects", e.model.index, 1);
+      },
+      /**
+      * When user clicks on the preview button, update the view
+      */
+      _Preview : function(){
+        this.set("error", false);
+        var projects = this.projects;
+        //update the project values
+        for(var i=0; i < projects.length; i++){
+          var description = this.$$('#desc_' + i).value;
+          var newProject = {
+            "description" : description ? description.replace(/\n/,"<br/>") : "",
+            "name" : this.$$('#name_' + i).value
+          };
+          if(projects[i].image_folder) newProject["image_folder"] = projects[i].image_folder;
+          if(projects[i].images) newProject["images"] = projects[i].images;
+          projects[i] = newProject;
+        }
+        //Make sure the update is notified
+        this.set("projects",projects.slice());
+        this._setNewProjects(projects.slice());
+        this._AnimateUp();
+      },
+      /**
+       * Update a project value before moving sequence
+       * @param {Integer} index
+       */
+      _UpdateProjectValues : function(index) {
+        var projects = this.projects;
+        var description = this.$$('#desc_' + index).value;
+        var newProject = {
+          "description" : description ? description.replace(/\n/,"<br/>") : "",
+          "name" : this.$$('#name_' + index).value
+        };
+        if(projects[index].image_folder) newProject["image_folder"] = projects[index].image_folder;
+        if(projects[index].images) newProject["images"] = projects[index].images;
+        projects[index] = newProject;
+        this.set("projects",projects.slice());
+      },
+      /**
+       * Move project up
+       */
+      _MoveUp : function(e) {
+        var index = e.model.index;
+        this._UpdateProjectValues(index);
+        if(index > 0) {
+          this.splice("projects", index - 1, 2, this.projects[index], this.projects[index - 1]);
+        }
+      },
+      /**
+       * Move project down
+       */
+      _MoveDown : function(e) {
+        var index = e.model.index;
+        this._UpdateProjectValues(index);
+        if(index < this.projects.length - 1) {
+          this.splice("projects", index, 2, this.projects[index + 1], this.projects[index]);
+        }
+      },
+      /** Upload the changes */
+      _Submit : function(){
+        this.set("error", false);
+        this._Preview(); //make sure projects array is updated
+        var newProjectsArr = this.projects;
+        var lastIndex = newProjectsArr.length - 1;
+        var newProjects = {};
+        newProjectsArr.forEach(function(project, index){
+          newProjects[String(index + 1)] = project;
+          if(lastIndex === index){
+            this.$.myfirebaseadmin.addData(newProjects,"/projects")
+            .then(function(){
+              this.set("orgProjects", newProjectsArr.slice());
+              //notify parent
+              this._setNewProjects(null);
+            }.bind(this))
+            .catch(function(){
+              this.set("errorMessage", "Update failed, try again!");
+              this.set("error", true);
+            }.bind(this));
+          }
+        }.bind(this));
+
+      },
+      /** Reset to current database state */
+      _Reset : function(){
+        this.set("error", false);
+        this.projects = []; //ensure view is updated
+        this.projects = this.orgProjects.slice(); //set a copy of it.
+      },
+      /**
+      * Close this dialog
+      */
+      _Close : function(){
+        this.set("error", false);
+        this.$.editDialog.close();
+      },
+      /**
+      * Move the dialog to the top to view the changes
+      * Show icon to put the dialog back into replace
+      */
+      _AnimateUp : function(){
+        this.$.editDialog.classList.add('edit_dialog_hide');
+        this.set('hidden', true);
+      },
+      /**
+      * Move the dialog back to normal location
+      * Hide the icon
+      */
+      _AnimateDown : function(){
+        this.$.editDialog.classList.remove('edit_dialog_hide');
+        this.set('hidden', false);
+      }
+    });
+  </script>
+</dom-module>

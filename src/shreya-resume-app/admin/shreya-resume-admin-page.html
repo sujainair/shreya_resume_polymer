@@ -1,0 +1,97 @@
+<!-- This is the admin page of the application. Shows all elements with edit option -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="/bower_components/paper-material/paper-material.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/iron-icons/editor-icons.html">
+<!-- Application dependencies -->
+<link rel="import" href="/src/shreya-resume-app/top-card-scroller.html">
+<link rel="import" href="/src/shreya-resume-app/quote-line.html">
+<link rel="import" href="/src/shreya-resume-app/shreya-resume-firebase-app.html">
+<link rel="import" href="/src/shreya-resume-app/shreya-project.html">
+<link rel="import" href="/src/shreya-resume-app/shreya-my-details.html">
+<link rel="import" href="/src/shreya-resume-app/admin/editor/edit-projects.html">
+
+<dom-module id="shreya-resume-admin-page">
+  <template>
+    <style>
+      .flex-items-layout{
+        @apply(--layout-horizontal);
+        @apply(--layout-around-justified);
+        @apply(--layout-wrap);
+      }
+      .edit_projects {
+        display: flex;
+        justify-content: space-around;
+        background: grey;
+        padding: 10px;
+      }
+      .edit_button {
+        background: white;
+      }
+    </style>
+    <shreya-resume-firebase-app id="myfirebase"></shreya-resume-firebase-app>
+    <shreya-my-details admin></shreya-my-details>
+    <quote-line admin></quote-line>
+    <!--<top-card-scroller admin></top-card-scroller>-->
+    <div class="edit_projects">
+      <paper-button class="edit_button" on-click="_Edit">
+        <iron-icon icon="editor:mode-edit"></iron-icon>
+        Edit Projects
+      </paper-button>
+    </div>
+    <paper-material elevation="0" class="flex-items-layout" style="padding:10px;" main>
+      <template is="dom-repeat" items="[[projects]]">
+        <shreya-project id="proj_[[index]]" project="[[item]]" my-position="[[index]]" admin><shreya-project>
+      </template>
+    </paper-material>
+    <edit-projects id="editor" new-projects="{{newProjects}}"></edit-projects>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'shreya-resume-admin-page',
+
+      properties: {
+        /** All the projects that are defined in firebase */
+        projects : {
+          type : Array
+        },
+        //check when there is an update
+        newProjects : {
+          type : Array,
+          observer : '_UpdateProjects'
+        }
+      },
+      /**
+      * Get the list of projects from firebase when ready
+      */
+      ready : function(){
+        this._UpdateProjects();
+      },
+      /**
+      * Update the projects from value
+      * OR from database if value is null/undefined
+      * */
+      _UpdateProjects : function(value){
+        if(value){
+          this.projects = value;
+        } else if(value === null || typeof(value) === 'undefined') {
+          this.$.myfirebase.getProjects()
+            .then(function(results){
+              if(results.type === 'projects'){
+                this.projects = results.value;
+              }
+            }.bind(this));
+        }
+      },
+      /** Open editor dialog box */
+      _Edit : function(){
+        this.$.editor.open(this.projects);
+      }
+    });
+  </script>
+</dom-module>

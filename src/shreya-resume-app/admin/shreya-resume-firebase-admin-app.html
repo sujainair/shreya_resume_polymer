@@ -1,0 +1,75 @@
+<!-- Defines all the firebase functions required for the admin app. Returns results in the form of a Promise each time
+    Currently admin users are hard coded to reduce unnecessary complexity -->
+<!-- bower & polymer dependencies -->
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/polymerfire/firebase-auth.html">
+
+<dom-module id="shreya-resume-firebase-admin-app">
+  <template>
+    <firebase-auth id="firebaseauth" user="{{user}}" provider="google" on-error="_handleError"></firebase-auth>
+    <firebase-document id="firebasedoc" path="{{firebasePath}}"></firebase-document>
+  </template>
+  <script>
+    Polymer({
+
+      is: 'shreya-resume-firebase-admin-app',
+      /**
+       * Login to firebase with google account
+       * @return {Promise} if user is admin
+       */
+      loginWithGoogle : function(){
+        return new Promise(function(resolve, reject){
+          this.$.firebaseauth.signInWithPopup('google')
+          .then(function(result){
+            if(result.user.email == "shreyaganesh91@gmail.com" || result.user.email == "nair.sujai@gmail.com"){
+              resolve(true);
+            }
+          }.bind(this))
+          .catch(function(error){
+            reject(error);
+          }.bind(this));
+        }.bind(this));
+      },
+
+      /**
+       * Upload a file to the given path and fileName
+       * @param {Array} files Array containing file name and File object
+       * @param {String} path Path to the storage reference
+       * @return {Object} upload process object. Can be used to track the progress of upload
+       */
+      uploadFiles : function(files, path) {
+        var storageRef = this.$.firebaseauth.app.storage().ref(path);
+        var uploadTasks = [];
+        files.forEach(function(file){
+          var fileRef = storageRef.child(file.name);
+          uploadTasks.push(fileRef.put(file.file));
+        });
+        return uploadTasks;
+      },
+      /**
+      * Remove file
+      * @param {String} filePath The complete path to file
+      * @return {Promise}
+      */
+      removeFile : function(filePath){
+        var storageRef = this.$.firebaseauth.app.storage().ref(filePath);
+        return storageRef.delete();
+      },
+      /**
+       * Add data to the database
+       * @param {Object} data The data to add. Can be string or JSON
+       * @param {String} path Path to which upload data
+       * @return {Promise}
+       */
+      addData : function(data, path){
+        this.firebasePath = path;
+        dataRef = this.$.firebasedoc.ref;
+        return dataRef.set(data);
+      },
+
+      _handleError : function(error){
+        //Do nothing
+      }
+    });
+  </script>
+</dom-module>
