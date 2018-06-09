@@ -191,7 +191,7 @@
       * Remove an image
       */
       _Delete : function(event){
-        var itemIndex = this.finalImages.indexOf(event.model.item);
+        var itemIndex = event.model.index;
         this.push("removedImages", this.splice("finalImages", itemIndex, 1)[0]);
         this.splice("imageSeq", itemIndex, 1);
       },
@@ -237,6 +237,7 @@
             reader.readAsDataURL(image);
           }
         }
+        this.$.editDialog.fit();
       },
       /**
        * Move the image up one sequence
@@ -291,7 +292,7 @@
           this._RemoveImages();
           onlyReArrange = false;
         }
-        if(onlyReArrange) this._UploadImageData();
+        this._UploadImageData();
       },
       /**
       * Close this dialog
@@ -338,7 +339,6 @@
             if(this.uploadingImages.length === uploadedCount) {
               this.set("uploading", false);
               this.uploadingImages = [];
-              this._UploadImageData(); //finally update the database with new info
             }
           }.bind(this));
         }.bind(this));
@@ -346,9 +346,6 @@
       _RemoveImages : function(){
         this.removedImages.forEach(function(image){
           this.$.myfirebaseadmin.removeFile('/' + this.$.folderName.value.replace(/[^a-zA-Z0-9]/g,"_") + '/' + image.name)
-          .then(function(){
-            this._UploadImageData(); //finally update the database with new info
-          }.bind(this))
           .catch(function(){
             this.set("errorMessage","Some images were not removed, try manually");
             this.set("error", true);
