@@ -21,6 +21,8 @@
         return new Promise(function(resolve, reject){
           this.$.firebaseauth.signInWithPopup('google')
           .then(function(result){
+            //I know! Obviously has verification in firebase database rules. 
+            //Just did not spend time to add funtionality for just 2 admin users. Maybe another day.
             if(result.user.email == "shreyaganesh91@gmail.com" || result.user.email == "nair.sujai@gmail.com"){
               resolve(true);
             }
